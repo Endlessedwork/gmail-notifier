@@ -47,21 +47,19 @@ openssl rand -base64 32
 
 ## ขั้นตอนที่ 4: Environment Variables
 
-ในแท็บ **Environment**:
+ในแท็บ **Environment** (ตัวแปรสภาพแวดล้อม):
 
-คลิก **Add Variable**
+ในช่อง text box ให้ก๊อปวางบรรทัดนี้:
 
-จะมี 2 ช่อง:
-- **ช่องซ้าย (Key)**: ใส่ `ENCRYPTION_KEY`
-- **ช่องขวา (Value)**: ใส่ key ที่ได้จากขั้นตอนที่ 1
-
-**ตัวอย่าง:**
-```
-ช่อง Key:     ENCRYPTION_KEY
-ช่อง Value:   5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
+```bash
+ENCRYPTION_KEY=5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
 ```
 
-**หมายเหตุ:** ใส่แค่ตัวแปรเดียวนี้พอ ส่วน Gmail/Telegram จะตั้งค่าผ่าน Web UI ภายหลัง
+(เปลี่ยน `5P1y...` เป็น key ที่คุณสร้างจากขั้นตอนที่ 1)
+
+**รูปแบบ:** `KEY=VALUE` (เหมือน .env file ปกติ)
+
+**หมายเหตุ:** ใส่แค่บรรทัดเดียวนี้พอ ส่วน Gmail/Telegram จะตั้งค่าผ่าน Web UI ภายหลัง
 
 ---
 
