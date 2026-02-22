@@ -28,7 +28,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend application
 COPY notifier.py .
-COPY config.example.json ./config.json
 
 # Copy frontend build from Stage 1
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
