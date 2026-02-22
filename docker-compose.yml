@@ -7,25 +7,20 @@ services:
     ports:
       - "3000:80"
     environment:
-      # === Telegram ===
-      - BOT_TOKEN=your_bot_token_here
-      
-      # === Gmail ===
-      - IMAP_SERVER=imap.gmail.com
-      - IMAP_PORT=993
-      - EMAIL_USER=your_email@gmail.com
-      - EMAIL_PASS=your_app_password_here
-      
-      # === Settings ===
+      # === Encryption (Required) ===
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+
+      # === Database ===
+      - DATABASE_URL=sqlite:///app/data/data.db
+
+      # === Worker Settings ===
       - CHECK_INTERVAL=60
       - MAX_BODY_LENGTH=300
-      - CHAT_ID=your_default_chat_id_here
-      
-      # === Filter Rules (JSON Array) ===
-      # Format: [{"name":"rule name","field":"from|subject","match":"keyword","chat_id":"chat_id"}]
-      - FILTER_RULES=[{"name":"All Emails","field":"from","match":"*","chat_id":"your_chat_id_here","priority":99,"enabled":true}]
-      
+
+      # === Timezone ===
       - TZ=Asia/Bangkok
+
     volumes:
+      - ./data:/app/data
       - ./logs:/app/logs
     restart: unless-stopped

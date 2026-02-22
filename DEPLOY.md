@@ -1,200 +1,745 @@
-# 🚀 Deploy บน Easypanel (ใช้ Environment Variables)
+# 🚀 Gmail Notifier Deployment Guide
 
-## ✅ วิธีง่ายๆ แบบธรรมดา - ใช้ ENV
+คู่มือการ deploy Gmail Notifier ไปยัง production servers
 
-### ขั้นตอนที่ 1: เข้า Easypanel
+## 📦 Deployment Options
 
-1. Login เข้า Easypanel Dashboard
-2. เลือก Project
-3. คลิก **"Create Service"**
+- [Easypanel](#-easypanel-deployment) (Recommended ⭐)
+- [Docker Compose](#-docker-compose-deployment)
+- [Manual Deployment](#%EF%B8%8F-manual-deployment)
 
-### ขั้นตอนที่ 2: ตั้งค่า Service
+---
 
-**Service Type:** App
+## 🎯 Easypanel Deployment
 
-**Source:**
-- Repository: `https://github.com/Endlessedwork/gmail-notifier.git`
-- Branch: `main`
+Easypanel เป็น control panel สำหรับจัดการ Docker containers บน VPS แบบง่ายๆ
 
-**Build:**
-- Build Method: **Docker**
-- Dockerfile Path: `./Dockerfile`
-- Build Context: `.`
+### Prerequisites
 
-**Port:**
-- Internal Port: **80**
-- Public: เปิดให้ public
+- Easypanel account และ server ที่ติดตั้ง Easypanel แล้ว
+- GitHub repository access
+- Domain name (optional, สามารถใช้ domain ของ Easypanel ได้)
 
-### ขั้นตอนที่ 3: ตั้งค่า Environment Variables (สำคัญ!)
+---
 
-ใน **Environment Variables** ให้ใส่:
+### Step 1: เตรียม Encryption Key
+
+**สร้าง ENCRYPTION_KEY** (สำคัญมาก! ใช้สำหรับเข้ารหัส Gmail passwords):
 
 ```bash
-# Telegram Bot
-BOT_TOKEN=7891234567:AAHxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# วิธี 1: ใช้ Python
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 
-# Gmail Account
-IMAP_SERVER=imap.gmail.com
-IMAP_PORT=993
-EMAIL_USER=yourname@gmail.com
-EMAIL_PASS=abcd efgh ijkl mnop
+# วิธี 2: ใช้ OpenSSL
+openssl rand -base64 32
+```
 
-# Settings
+ตัวอย่างผลลัพธ์: `5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=`
+
+⚠️ **เก็บ key นี้ไว้เป็นความลับ** และจะใช้ในขั้นตอนต่อไป
+
+---
+
+### Step 2: สร้าง App ใน Easypanel
+
+1. **Login เข้า Easypanel Dashboard**
+
+2. **เลือก Project → คลิก "Create Service"**
+
+3. **Service Type:** App
+
+4. **ตั้งค่า Source:**
+   - **Source Type:** Git Repository
+   - **Repository URL:** `https://github.com/Endlessedwork/gmail-notifier.git`
+   - **Branch:** `main`
+
+5. **ตั้งค่า Build:**
+   - **Build Method:** Dockerfile
+   - **Dockerfile Path:** `Dockerfile` (default)
+   - **Context Path:** `.` (default)
+
+---
+
+### Step 3: Configure Environment Variables
+
+ใน **Environment Variables** เพิ่มตัวแปรเหล่านี้:
+
+```bash
+# REQUIRED: Encryption Key (จากขั้นตอนที่ 1)
+ENCRYPTION_KEY=5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
+
+# Database (ใช้ค่าเริ่มต้น)
+DATABASE_URL=sqlite:///app/data/data.db
+
+# Worker Settings (ปรับได้ตามต้องการ)
 CHECK_INTERVAL=60
 MAX_BODY_LENGTH=300
-CHAT_ID=-1001234567890
-
-# Filter Rules (JSON - ใส่ทั้งบรรทัดเลย)
-FILTER_RULES=[{"name":"All Emails","field":"from","match":"*","chat_id":"-1001234567890","priority":99,"enabled":true}]
 
 # Timezone
 TZ=Asia/Bangkok
+
+# Development
+PYTHONUNBUFFERED=1
 ```
 
-### ขั้นตอนที่ 4: Deploy!
-
-คลิก **"Deploy"** แล้วรอ 2-5 นาที
-
-### ขั้นตอนที่ 5: เข้าใช้งาน
-
-เปิดบราวเซอร์:
-```
-https://your-app.easypanel.host
-```
+**หมายเหตุ:**
+- ✅ **ENCRYPTION_KEY เท่านั้นที่จำเป็นต้องตั้งค่า**
+- ค่าอื่นๆ มีค่าเริ่มต้นแล้ว สามารถปรับแต่งได้ตามต้องการ
+- **ไม่ต้องตั้งค่า Gmail/Telegram ใน ENV** จะตั้งค่าผ่าน Web UI แทน
 
 ---
 
-## 📝 วิธีหาค่าต่างๆ
+### Step 4: Configure Volumes (Persistent Storage)
 
-### 1. หา BOT_TOKEN
+ใน **Volumes** (หรือ Mounts) เพิ่ม:
 
-1. เปิด Telegram แล้วคุยกับ [@BotFather](https://t.me/BotFather)
+| Volume Name | Mount Path | Size | คำอธิบาย |
+|-------------|------------|------|---------|
+| `data` | `/app/data` | 1 GB | **จำเป็น** - เก็บ SQLite database |
+| `logs` | `/app/logs` | 500 MB | Optional - เก็บ application logs |
+
+⚠️ **Volume `/app/data` จำเป็นมาก** เพราะเก็บ database ที่มีการตั้งค่าทั้งหมด
+
+---
+
+### Step 5: Configure Port & Domain
+
+**Port Mapping:**
+- **Container Port:** `80`
+- **Protocol:** HTTP
+- **Public:** เปิดให้ public
+
+**Domain:**
+- ใช้ Easypanel subdomain: `your-app.easypanel.host`
+- หรือตั้ง Custom Domain ของคุณเอง
+
+**SSL/HTTPS:**
+- เปิด "Auto SSL" เพื่อใช้ HTTPS อัตโนมัติ ✅
+
+---
+
+### Step 6: Deploy!
+
+1. **คลิก "Deploy"**
+2. รอ build process (ประมาณ 3-5 นาที)
+3. ตรวจสอบ Logs เพื่อดู deployment status
+
+---
+
+### Step 7: Initialize Database
+
+**หลัง deployment สำเร็จ** ต้อง initialize database ก่อนใช้งาน:
+
+**วิธีที่ 1: ผ่าน Easypanel Shell**
+1. ไปที่ App → **Shell** หรือ **Terminal**
+2. รันคำสั่ง:
+   ```bash
+   python -c "from backend.core.database import init_db; init_db()"
+   ```
+
+**วิธีที่ 2: ผ่าน Docker Exec** (ถ้า deploy บน VPS)
+```bash
+docker exec -it <container-name> python -c "from backend.core.database import init_db; init_db()"
+```
+
+**ตรวจสอบว่า database สร้างสำเร็จ:**
+```bash
+sqlite3 data/data.db ".tables"
+```
+
+ต้องเห็น 5 tables:
+- `gmail_accounts`
+- `notification_channels`
+- `filter_rules`
+- `notification_logs`
+- `config_settings`
+
+---
+
+### Step 8: เข้าใช้งาน Web UI
+
+เปิดเว็บไปที่ domain ที่ตั้งค่าไว้:
+
+- **Frontend:** `https://your-app.easypanel.host`
+- **API Docs:** `https://your-app.easypanel.host/api/docs`
+
+ตอนนี้จะเห็น **Gmail Notifier Dashboard** แล้ว! 🎉
+
+---
+
+### Step 9: การตั้งค่าผ่าน Web UI
+
+**ไม่ต้องแก้ไข ENV variables อีก** ตั้งค่าทุกอย่างผ่าน Web UI:
+
+#### 1. เพิ่ม Gmail Account
+
+1. ไปที่ **Gmail Accounts** → **Add Account**
+2. กรอก:
+   - **Email:** `your-email@gmail.com`
+   - **App Password:** [สร้างจาก Google](https://myaccount.google.com/apppasswords)
+   - **IMAP Server:** `imap.gmail.com` (default)
+   - **IMAP Port:** `993` (default)
+3. คลิก **Save**
+
+**วิธีสร้าง Gmail App Password:**
+1. ไปที่ https://myaccount.google.com/apppasswords
+2. สร้าง App Password ใหม่ (ต้องเปิด 2-Step Verification ก่อน)
+3. คัดลอก password 16 ตัว
+
+---
+
+#### 2. เพิ่ม Notification Channel
+
+**สำหรับ Telegram:**
+
+1. ไปที่ **Notification Channels** → **Add Channel**
+2. เลือก **Type:** `Telegram`
+3. กรอก:
+   - **Name:** `My Telegram` (ชื่ออะไรก็ได้)
+   - **Bot Token:** `123456:ABC...` (จาก [@BotFather](https://t.me/BotFather))
+   - **Chat ID:** `-1001234567890` (จาก [@getidsbot](https://t.me/getidsbot))
+4. คลิก **Save**
+
+**วิธีหา Telegram Bot Token:**
+1. คุยกับ [@BotFather](https://t.me/BotFather)
 2. ส่ง `/newbot`
 3. ตั้งชื่อ bot
-4. คัดลอก **Bot Token** ที่ได้ (รูปแบบ: `1234567890:AAHxxxxxxxxxx`)
+4. คัดลอก **Bot Token**
 
-### 2. หา CHAT_ID
+**วิธีหา Chat ID:**
+1. เพิ่ม bot เข้า group/channel
+2. คุยกับ [@getidsbot](https://t.me/getidsbot)
+3. ส่ง `/start`
+4. คัดลอก **Chat ID** (เลขติดลบ สำหรับ groups)
 
-**วิธีที่ 1: ใช้ @getidsbot**
-1. เปิด Telegram คุยกับ [@getidsbot](https://t.me/getidsbot)
-2. ส่ง `/start`
-3. คัดลอก **Chat ID** (เลขติดลบ เช่น `-1001234567890`)
+**สำหรับ LINE Notify:**
+1. Type: `LINE`
+2. [สร้าง Token](https://notify-bot.line.me/my/)
+3. กรอก Access Token
 
-**วิธีที่ 2: ใช้ API**
-1. เพิ่ม bot เข้า channel/group
-2. ส่งข้อความในกลุ่ม
-3. เปิด: `https://api.telegram.org/bot<BOT_TOKEN>/getUpdates`
-4. หา `"chat":{"id":-100xxxxxxxxx}`
-
-### 3. หา Gmail App Password
-
-1. ไปที่ https://myaccount.google.com/apppasswords
-2. สร้าง App Password ใหม่
-3. คัดลอก password 16 ตัว (ใส่แบบมีเว้นวรรคหรือไม่มีก็ได้)
-
-**หมายเหตุ:** ต้องเปิด 2-Step Verification ก่อน
+**สำหรับ Webhook:**
+1. Type: `Webhook`
+2. กรอก URL และ Method (POST/GET)
 
 ---
 
-## 🔧 การเพิ่ม Filter Rules
+#### 3. สร้าง Filter Rule
 
-Format ของ `FILTER_RULES`:
-```json
-[
-  {
-    "name": "ชื่อ rule",
-    "field": "from",
-    "match": "keyword",
-    "chat_id": "-1001234567890",
-    "priority": 1,
-    "enabled": true
-  }
-]
+1. ไปที่ **Filter Rules** → **Add Rule**
+2. กรอก:
+   - **Gmail Account:** เลือก account ที่สร้างไว้
+   - **Rule Name:** `Banking Alerts` (ชื่ออะไรก็ได้)
+   - **Field:** `from` (หรือ `subject`, `body`)
+   - **Match Type:** `contains` (หรือ `regex`, `equals`)
+   - **Match Value:** `bank.com` (คำที่ต้องการกรอง)
+   - **Channel:** เลือก notification channel
+   - **Priority:** `10` (เลขน้อย = ลำดับสูง)
+3. คลิก **Save**
+
+**ตัวอย่าง Filter Rules:**
+
+| Rule Name | Field | Match Type | Match Value | Priority |
+|-----------|-------|------------|-------------|----------|
+| Banking | from | contains | bank | 10 |
+| Invoice | subject | contains | invoice | 20 |
+| All Gmail | from | contains | @gmail.com | 50 |
+| Default | from | contains | * | 99 |
+
+---
+
+#### 4. ดู Notification Logs
+
+ไปที่ **Dashboard** → **Recent Logs** เพื่อดู:
+- อีเมลที่ได้รับ
+- Rule ที่ match
+- Notification ที่ส่งไป
+- Status (sent/failed)
+
+---
+
+## 🐳 Docker Compose Deployment
+
+สำหรับการ deploy บน VPS ทั่วไป (ไม่ใช้ Easypanel)
+
+### Prerequisites
+
+- Docker และ Docker Compose ติดตั้งแล้ว
+- Server with public IP
+- Domain name (optional)
+
+---
+
+### Setup Steps
+
+**1. Clone repository**
+```bash
+git clone https://github.com/Endlessedwork/gmail-notifier.git
+cd gmail-notifier
 ```
 
-**ตัวอย่าง:**
+**2. สร้าง .env file**
+```bash
+cp .env.example .env
+nano .env
+```
+
+**3. แก้ไข .env และเปลี่ยน ENCRYPTION_KEY**
+```bash
+# สร้าง key ใหม่
+openssl rand -base64 32
+
+# ใส่ใน .env
+ENCRYPTION_KEY=<your-generated-key>
+```
+
+**4. Build และ Run**
+```bash
+docker-compose up -d --build
+```
+
+**5. Initialize Database**
+```bash
+docker exec -it gmail-notifier python -c "from backend.core.database import init_db; init_db()"
+```
+
+**6. ตรวจสอบ Logs**
+```bash
+docker logs -f gmail-notifier
+```
+
+**7. เข้าใช้งาน**
+- Frontend: http://YOUR_SERVER_IP:3000
+- API Docs: http://YOUR_SERVER_IP:3000/api/docs
+
+---
+
+### Nginx Reverse Proxy (Optional)
+
+ถ้าต้องการใช้ custom domain กับ HTTPS:
+
+**/etc/nginx/sites-available/gmail-notifier**
+```nginx
+server {
+    listen 80;
+    server_name gmail-notifier.yourdomain.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket support
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+```
+
+Enable site และติดตั้ง SSL:
+```bash
+sudo ln -s /etc/nginx/sites-available/gmail-notifier /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+
+# Install SSL with Certbot
+sudo certbot --nginx -d gmail-notifier.yourdomain.com
+```
+
+---
+
+## 🛠️ Manual Deployment
+
+สำหรับการ deploy โดยไม่ใช้ Docker (Advanced)
+
+### Prerequisites
+
+- Python 3.11+
+- Node.js 18+
+- Nginx
+- SQLite3
+- Supervisor (process manager)
+
+---
+
+### Backend Setup
 
 ```bash
-# Rule เดียว
-FILTER_RULES=[{"name":"Banking","field":"from","match":"bank","chat_id":"-100111111111"}]
+# 1. Install Python dependencies
+pip install -r requirements.txt
 
-# หลาย Rules
-FILTER_RULES=[{"name":"Banking","field":"from","match":"bank","chat_id":"-100111111111"},{"name":"Invoice","field":"subject","match":"invoice","chat_id":"-100222222222"}]
+# 2. Setup .env
+cp .env.example .env
+nano .env  # เปลี่ยน ENCRYPTION_KEY
+
+# 3. Initialize database
+mkdir -p data logs
+sqlite3 data/data.db < migrations/001_init.sql
+
+# 4. Test backend
+uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
-
-**คำอธิบาย:**
-- `field`: `"from"` = กรองจากผู้ส่ง, `"subject"` = กรองจากหัวข้อ
-- `match`: คำที่ต้องการกรอง (เช่น `"bank"`, `"@gmail.com"`)
-- `chat_id`: Telegram Chat ID ที่จะส่งไป
-- `priority`: เลขน้อยจะเช็คก่อน (1-99)
 
 ---
 
-## 🐛 Troubleshooting
+### Worker Setup
 
-### ปัญหา: Build Failed
-
-**เช็ค:**
-- Dockerfile Path ต้องเป็น `./Dockerfile`
-- Build Context ต้องเป็น `.`
-
-### ปัญหา: Container Crash
-
-**เช็ค ENV:**
-- `BOT_TOKEN` ถูกต้องหรือไม่?
-- `EMAIL_USER` และ `EMAIL_PASS` ถูกต้องหรือไม่?
-- `FILTER_RULES` เป็น JSON ที่ valid หรือไม่?
-
-**ดู Logs:**
 ```bash
-# ใน Easypanel → Logs
-# หรือ
-docker logs gmail-notifier
+# Test worker
+python -m worker.main
 ```
-
-### ปัญหา: Frontend ไม่แสดง
-
-**เช็ค:**
-- Port 80 เปิดหรือไม่?
-- Nginx running หรือไม่?
-
-### ปัญหา: ไม่มี Notification
-
-**เช็ค:**
-1. Bot Token ถูกต้องหรือไม่? ทดสอบ: `https://api.telegram.org/bot<TOKEN>/getMe`
-2. Chat ID ถูกต้องหรือไม่?
-3. เพิ่ม bot เข้า channel/group แล้วหรือยัง?
-4. Gmail App Password ถูกต้องหรือไม่?
 
 ---
 
-## 🔄 การอัปเดต
+### Frontend Setup
 
-### Auto Deploy (แนะนำ)
+```bash
+cd frontend
 
-ใน Easypanel:
+# 1. Install dependencies
+npm install
+
+# 2. Build production
+npm run build
+
+# 3. Copy build to nginx
+sudo mkdir -p /var/www/gmail-notifier
+sudo cp -r dist/* /var/www/gmail-notifier/
+```
+
+---
+
+### Nginx Configuration
+
+**/etc/nginx/sites-available/gmail-notifier**
+```nginx
+server {
+    listen 80;
+    server_name gmail-notifier.yourdomain.com;
+
+    root /var/www/gmail-notifier;
+    index index.html;
+
+    # API Proxy (FastAPI Backend)
+    location /api/ {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket support
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # Frontend SPA routing
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Static files caching
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json;
+}
+```
+
+Enable site:
+```bash
+sudo ln -s /etc/nginx/sites-available/gmail-notifier /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+---
+
+### Supervisor Configuration
+
+**/etc/supervisor/conf.d/gmail-notifier.conf**
+```ini
+[program:gmail-notifier-api]
+command=uvicorn backend.main:app --host 0.0.0.0 --port 8000
+directory=/path/to/gmail-notifier
+user=www-data
+autostart=true
+autorestart=true
+stdout_logfile=/path/to/gmail-notifier/logs/api.log
+stderr_logfile=/path/to/gmail-notifier/logs/api_err.log
+environment=PYTHONUNBUFFERED="1"
+
+[program:gmail-notifier-worker]
+command=python -m worker.main
+directory=/path/to/gmail-notifier
+user=www-data
+autostart=true
+autorestart=true
+stdout_logfile=/path/to/gmail-notifier/logs/worker.log
+stderr_logfile=/path/to/gmail-notifier/logs/worker_err.log
+environment=PYTHONUNBUFFERED="1"
+stopwaitsecs=10
+```
+
+Start services:
+```bash
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl start gmail-notifier-api
+sudo supervisorctl start gmail-notifier-worker
+```
+
+---
+
+## 🔍 Troubleshooting
+
+### Database Errors
+
+```bash
+# Reset database
+rm data/data.db
+sqlite3 data/data.db < migrations/001_init.sql
+```
+
+---
+
+### Check Logs
+
+**Easypanel:**
+- ไปที่ App → **Logs**
+
+**Docker Compose:**
+```bash
+docker logs -f gmail-notifier
+```
+
+**Manual Deployment:**
+```bash
+tail -f logs/api.log
+tail -f logs/worker.log
+```
+
+---
+
+### Build Failed
+
+**เช็ค Easypanel:**
+- Dockerfile Path: `Dockerfile`
+- Build Context: `.`
+- Repository URL ถูกต้อง
+
+**เช็ค Docker:**
+```bash
+docker build -t gmail-notifier .
+```
+
+---
+
+### Port Conflicts
+
+แก้ไขใน `docker-compose.yml`:
+```yaml
+ports:
+  - "8080:80"  # เปลี่ยนจาก 3000 เป็น 8080
+```
+
+---
+
+### Permission Issues
+
+```bash
+chmod 755 data logs
+chown -R 1000:1000 data logs  # ถ้าใช้ Docker
+```
+
+---
+
+### Gmail Connection Failed
+
+**เช็ค:**
+1. Gmail App Password ถูกต้อง (16 ตัว)
+2. 2-Step Verification เปิดแล้ว
+3. IMAP enabled ใน Gmail Settings
+
+**ทดสอบ IMAP:**
+```bash
+telnet imap.gmail.com 993
+```
+
+---
+
+### Notification Not Sent
+
+**เช็ค Telegram:**
+1. Bot Token ถูกต้อง: `https://api.telegram.org/bot<TOKEN>/getMe`
+2. Chat ID ถูกต้อง
+3. Bot เป็นสมาชิกใน group/channel
+
+**เช็ค LINE:**
+1. LINE Notify Token ถูกต้อง
+2. Token ยังไม่ expired
+
+**เช็ค Webhook:**
+1. URL accessible
+2. Endpoint รับ POST request
+
+---
+
+## 📊 Monitoring
+
+### Health Check
+
+```bash
+# ตรวจสอบ API ทำงาน
+curl http://your-domain/api/v1/config-settings
+
+# ตรวจสอบ database
+sqlite3 data/data.db "SELECT COUNT(*) FROM gmail_accounts;"
+```
+
+---
+
+### Database Backup
+
+**Manual Backup:**
+```bash
+# SQLite backup
+sqlite3 data/data.db ".backup backup-$(date +%Y%m%d).db"
+
+# หรือใช้ cp
+cp data/data.db backups/data-$(date +%Y%m%d-%H%M%S).db
+```
+
+**Automated Backup (Cron):**
+```bash
+# เพิ่มใน crontab
+0 2 * * * cd /path/to/gmail-notifier && sqlite3 data/data.db ".backup backups/data-$(date +\%Y\%m\%d).db"
+```
+
+---
+
+### Log Rotation
+
+สร้าง `/etc/logrotate.d/gmail-notifier`:
+```
+/path/to/gmail-notifier/logs/*.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+    missingok
+    copytruncate
+}
+```
+
+---
+
+## 🔄 Updates & Maintenance
+
+### Update via Easypanel
+
+**Auto Deploy (Recommended):**
 1. Settings → **Auto Deploy**
 2. เลือก Branch: `main`
 3. เปิด Auto Deploy
 
 ทุกครั้งที่ push ไป GitHub จะ deploy อัตโนมัติ!
 
-### Manual Deploy
-
+**Manual Rebuild:**
 1. ไปที่ Service
-2. คลิก **Rebuild** หรือ **Redeploy**
+2. คลิก **Rebuild**
 
 ---
 
-## ✅ สรุป
+### Update via Docker Compose
 
-**ไม่ต้องยุ่งกับ config.json หรือ Volume!**
+```bash
+git pull origin main
+docker-compose down
+docker-compose up -d --build
+```
 
-แค่ตั้งค่า ENV Variables ใน Easypanel:
-- BOT_TOKEN
-- EMAIL_USER
-- EMAIL_PASS
-- CHAT_ID
-- FILTER_RULES (JSON)
+---
 
-แล้ว Deploy! 🚀
+### Database Migration
+
+ถ้ามี migration ใหม่:
+```bash
+# Run migration scripts
+sqlite3 data/data.db < migrations/002_new_migration.sql
+```
+
+---
+
+## 🔐 Security Best Practices
+
+### Production Checklist
+
+- ✅ ใช้ HTTPS เสมอ (Auto SSL ใน Easypanel หรือ Certbot)
+- ✅ เก็บ `ENCRYPTION_KEY` เป็นความลับ (อย่า commit ลง git)
+- ✅ Backup database เป็นประจำ (daily recommended)
+- ✅ ตั้ง firewall (เปิดแค่ port 80, 443)
+- ✅ อัปเดต dependencies เป็นประจำ
+- ✅ Monitor logs สำหรับ errors
+- ✅ ใช้ strong Gmail App Passwords
+- ✅ ตรวจสอบ notification channels เป็นประจำ
+
+---
+
+### Environment Variables Security
+
+**ใน Easypanel:**
+- ตั้งค่า ENV ผ่าน UI (ไม่แสดงใน logs)
+- ใช้ Secret Management ถ้ามี
+
+**ใน .env file:**
+```bash
+# ต้อง .gitignore
+echo ".env" >> .gitignore
+
+# Permission
+chmod 600 .env
+```
+
+---
+
+## 📞 Support & Resources
+
+- **GitHub Issues:** https://github.com/Endlessedwork/gmail-notifier/issues
+- **Documentation:** [README.md](README.md)
+- **API Documentation:** http://your-domain/api/docs
+- **Frontend Integration:** [frontend/API_INTEGRATION.md](frontend/API_INTEGRATION.md)
+
+---
+
+## ✅ Quick Summary
+
+### สำหรับ Easypanel (Recommended)
+
+1. สร้าง `ENCRYPTION_KEY`
+2. Create App → Git Repository
+3. ตั้งค่า ENV: `ENCRYPTION_KEY`
+4. ตั้งค่า Volume: `/app/data`
+5. Deploy!
+6. Initialize database
+7. เข้า Web UI → ตั้งค่า Gmail/Telegram/Rules
+
+**ไม่ต้องแก้ไข code หรือ config files** ตั้งค่าทุกอย่างผ่าน Web UI! 🎉
+
+---
+
+**Happy Deploying! 🚀**
