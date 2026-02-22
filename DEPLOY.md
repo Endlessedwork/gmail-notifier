@@ -43,14 +43,16 @@ openssl rand -base64 32
 2. **Service Type:** App
 
 3. **Source:**
-   ```
+
+   ```text
    Source Type: Git Repository
    Repository URL: https://github.com/Endlessedwork/gmail-notifier.git
    Branch: main
    ```
 
 4. **Build:**
-   ```
+
+   ```text
    Build Method: Dockerfile
    Dockerfile Path: Dockerfile
    Context Path: .
@@ -63,13 +65,15 @@ openssl rand -base64 32
 ไปที่ **Environment** → **Add**
 
 กรอก:
-```
+
+```text
 Key: ENCRYPTION_KEY
 ```
 
-```
+```text
 Value: 5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
 ```
+
 (ใช้ key ที่สร้างจากขั้นตอนที่ 1)
 
 **จบ!** ใส่ตัวเดียวพอ
@@ -81,12 +85,14 @@ Value: 5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
 ไปที่ **Mounts** → **เพิ่ม Volume Mount**
 
 ช่อง "ชื่อ":
-```
+
+```text
 data
 ```
 
 ช่อง "เส้นทางเชื่อมต่อ":
-```
+
+```text
 /app/data
 ```
 
@@ -97,7 +103,8 @@ data
 ### Step 5: Configure Port & Domain
 
 **Port:**
-```
+
+```text
 Container Port: 80
 Protocol: HTTP
 Public: ✓ เปิด
@@ -144,7 +151,8 @@ python -c "from backend.core.database import init_db; init_db()"
 **1. เพิ่ม Gmail Account:**
 
 Gmail Accounts → Add Account → กรอก:
-```
+
+```text
 Email: your-email@gmail.com
 App Password: <สร้างจาก https://myaccount.google.com/apppasswords>
 IMAP Server: imap.gmail.com
@@ -154,7 +162,8 @@ IMAP Port: 993
 **2. เพิ่ม Telegram Channel:**
 
 Notification Channels → Add Channel → กรอก:
-```
+
+```text
 Type: Telegram
 Name: My Telegram
 Bot Token: <จาก @BotFather>
@@ -164,7 +173,8 @@ Chat ID: <จาก @getidsbot>
 **3. สร้าง Filter Rule:**
 
 Filter Rules → Add Rule → กรอก:
-```
+
+```text
 Gmail Account: <เลือก account>
 Rule Name: Banking Alerts
 Field: from
