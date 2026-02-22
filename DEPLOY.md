@@ -62,39 +62,27 @@ openssl rand -base64 32
 
 ### Step 3: Configure Environment Variables
 
-ไปที่ **Environment** → **Add**
+ในแท็บ **Environment**:
 
-กรอก:
+ก๊อปวางบรรทัดนี้:
 
-```text
-Key: ENCRYPTION_KEY
+```bash
+ENCRYPTION_KEY=5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
 ```
 
-```text
-Value: 5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
-```
+(เปลี่ยนเป็น key ที่สร้างจากขั้นตอนที่ 1)
 
-(ใช้ key ที่สร้างจากขั้นตอนที่ 1)
-
-**จบ!** ใส่ตัวเดียวพอ
+**จบ!** ใส่แค่บรรทัดเดียว
 
 ---
 
 ### Step 4: Configure Volumes (Persistent Storage)
 
-ไปที่ **Mounts** → **เพิ่ม Volume Mount**
+ในแท็บ **Mounts** → **Add Mount** → เลือก **Volume**
 
-ช่อง "ชื่อ":
-
-```text
-data
-```
-
-ช่อง "เส้นทางเชื่อมต่อ":
-
-```text
-/app/data
-```
+กรอก:
+- **Name**: `data`
+- **Mount Path**: `/app/data`
 
 **จบ!** (เก็บ database ไม่ให้หาย)
 
