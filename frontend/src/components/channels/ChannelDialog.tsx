@@ -20,7 +20,13 @@ import {
 } from '@/components/ui/select'
 import { Loader2 } from 'lucide-react'
 import { useCreateNotificationChannel, useUpdateNotificationChannel } from '@/hooks/useNotificationChannels'
-import type { NotificationChannel, ChannelType } from '@/types'
+import type {
+  NotificationChannel,
+  ChannelType,
+  ChannelConfig,
+  NotificationChannelCreate,
+  NotificationChannelUpdate,
+} from '@/types'
 
 interface ChannelDialogProps {
   open: boolean
@@ -68,27 +74,53 @@ export function ChannelDialog({
     }
   }, [channel, open])
 
+  const buildChannelConfig = (): ChannelConfig => {
+    switch (formData.type) {
+      case 'telegram':
+        return {
+          bot_token: String(formData.config.bot_token ?? ''),
+          chat_id: String(formData.config.chat_id ?? ''),
+        }
+      case 'line':
+        return {
+          access_token: String(formData.config.access_token ?? ''),
+        }
+      case 'webhook':
+        return {
+          url: String(formData.config.url ?? ''),
+        }
+    }
+  }
+
+  const buildChannelPayload = (): NotificationChannelCreate => ({
+    type: formData.type,
+    name: formData.name,
+    enabled: formData.enabled,
+    config: buildChannelConfig(),
+  })
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (channel) {
+      const data: NotificationChannelUpdate = buildChannelPayload()
       updateChannel.mutate(
-        { id: channel.id, data: formData },
+        { id: channel.id, data },
         {
           onSuccess: () => onOpenChange(false),
         }
       )
     } else {
-      createChannel.mutate(formData as any, {
+      createChannel.mutate(buildChannelPayload(), {
         onSuccess: () => onOpenChange(false),
       })
     }
   }
 
-  const handleTypeChange = (type: ChannelType) => {
+  const handleTypeChange = (type: string) => {
     setFormData({
       ...formData,
-      type,
+      type: type as ChannelType,
       config: {},
     })
   }

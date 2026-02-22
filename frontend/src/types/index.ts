@@ -165,10 +165,32 @@ export interface ConfigSettingList {
   settings: ConfigSetting[]
 }
 
+// Legacy Config/Credentials Types (used by legacy dashboard hooks/components)
+export type LogLevel = 'DEBUG' | 'INFO' | 'WARNING' | 'ERROR'
+
+export interface Config {
+  settings: {
+    imap_server: string
+    imap_port: number
+    check_interval: number
+    max_body_length: number
+    default_chat_id: string
+    log_level: LogLevel
+    [key: string]: unknown
+  }
+  [key: string]: unknown
+}
+
+export interface Credentials {
+  telegram?: Record<string, unknown>
+  gmail?: Record<string, unknown>
+  [key: string]: unknown
+}
+
 // Legacy Types (for backward compatibility - will be removed)
 export interface LogEntry {
   timestamp: string
-  level: 'INFO' | 'WARNING' | 'ERROR' | 'DEBUG'
+  level: LogLevel
   message: string
   subject?: string
   sender?: string
