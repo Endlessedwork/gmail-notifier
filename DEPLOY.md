@@ -26,11 +26,9 @@ Easypanel เป็น control panel สำหรับจัดการ Docker
 
 รันคำสั่งนี้:
 
-```bash
 openssl rand -base64 32
-```
 
-จะได้ key ออกมา เช่น: `5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=`
+จะได้ key ออกมา เช่น: 5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
 
 **เก็บไว้ใช้ขั้นตอนต่อไป**
 
@@ -44,19 +42,15 @@ openssl rand -base64 32
 
 3. **Source:**
 
-   ```text
    Source Type: Git Repository
    Repository URL: https://github.com/Endlessedwork/gmail-notifier.git
    Branch: main
-   ```
 
 4. **Build:**
 
-   ```text
    Build Method: Dockerfile
    Dockerfile Path: Dockerfile
    Context Path: .
-   ```
 
 ---
 
@@ -66,9 +60,7 @@ openssl rand -base64 32
 
 ก๊อปวางบรรทัดนี้:
 
-```bash
 ENCRYPTION_KEY=5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
-```
 
 (เปลี่ยนเป็น key ที่สร้างจากขั้นตอนที่ 1)
 
@@ -92,11 +84,9 @@ ENCRYPTION_KEY=5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
 
 **Port:**
 
-```text
 Container Port: 80
 Protocol: HTTP
 Public: ✓ เปิด
-```
 
 **Domain:** ใช้ของ Easypanel หรือตั้งเอง
 
