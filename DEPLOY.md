@@ -24,126 +24,89 @@ Easypanel เป็น control panel สำหรับจัดการ Docker
 
 ### Step 1: เตรียม Encryption Key
 
-**สร้าง ENCRYPTION_KEY** (สำคัญมาก! ใช้สำหรับเข้ารหัส Gmail passwords):
+รันคำสั่งนี้:
 
 ```bash
-# วิธี 1: ใช้ Python
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-
-# วิธี 2: ใช้ OpenSSL
 openssl rand -base64 32
 ```
 
-ตัวอย่างผลลัพธ์: `5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=`
+จะได้ key ออกมา เช่น: `5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=`
 
-⚠️ **เก็บ key นี้ไว้เป็นความลับ** และจะใช้ในขั้นตอนต่อไป
+**เก็บไว้ใช้ขั้นตอนต่อไป**
 
 ---
 
 ### Step 2: สร้าง App ใน Easypanel
 
-1. **Login เข้า Easypanel Dashboard**
+1. Login → เลือก Project → **Create Service**
 
-2. **เลือก Project → คลิก "Create Service"**
+2. **Service Type:** App
 
-3. **Service Type:** App
+3. **Source:**
+   ```
+   Source Type: Git Repository
+   Repository URL: https://github.com/Endlessedwork/gmail-notifier.git
+   Branch: main
+   ```
 
-4. **ตั้งค่า Source:**
-   - **Source Type:** Git Repository
-   - **Repository URL:** `https://github.com/Endlessedwork/gmail-notifier.git`
-   - **Branch:** `main`
-
-5. **ตั้งค่า Build:**
-   - **Build Method:** Dockerfile
-   - **Dockerfile Path:** `Dockerfile` (default)
-   - **Context Path:** `.` (default)
+4. **Build:**
+   ```
+   Build Method: Dockerfile
+   Dockerfile Path: Dockerfile
+   Context Path: .
+   ```
 
 ---
 
 ### Step 3: Configure Environment Variables
 
-ใน Easypanel → App Settings → **Environment** (หรือ Environment Variables):
+ไปที่ **Environment** → **Add Environment Variable**
 
-**คลิก "Add Environment Variable"** และเพิ่ม:
+**ใส่แค่ตัวเดียว:**
 
-**ค่าที่จำเป็น (REQUIRED):**
-
-| Key | Value | คำอธิบาย |
-|-----|-------|----------|
-| `ENCRYPTION_KEY` | `<key-จากขั้นตอนที่-1>` | **จำเป็นมาก** - ใช้เข้ารหัส Gmail passwords |
+```
+Key: ENCRYPTION_KEY
+Value: <key-ที่สร้างจากขั้นตอนที่-1>
+```
 
 **ตัวอย่าง:**
 ```
-Key: ENCRYPTION_KEY
-Value: 5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
+ENCRYPTION_KEY=5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
 ```
 
-**ค่าเสริม (OPTIONAL)** - มีค่าเริ่มต้นแล้ว ไม่ต้องใส่ก็ได้:
+**จบ!** ไม่ต้องใส่อะไรเพิ่ม
 
-| Key | Value | คำอธิบาย |
-|-----|-------|----------|
-| `DATABASE_URL` | `sqlite:///app/data/data.db` | เส้นทาง database (ใช้ค่าเริ่มต้น) |
-| `CHECK_INTERVAL` | `60` | ตรวจสอบอีเมลทุกกี่วินาที (default: 60) |
-| `MAX_BODY_LENGTH` | `300` | ความยาว email preview (default: 300) |
-| `TZ` | `Asia/Bangkok` | Timezone (default: Asia/Bangkok) |
-| `PYTHONUNBUFFERED` | `1` | สำหรับ logging (แนะนำให้ใส่) |
-
-**สรุป:**
-- ✅ **จำเป็นต้องใส่แค่ `ENCRYPTION_KEY` เท่านั้น**
-- ✅ ค่าอื่นๆ มีค่าเริ่มต้นแล้ว (ใส่เพิ่มได้ถ้าต้องการปรับแต่ง)
-- ✅ **ไม่ต้องใส่ Gmail/Telegram ใน ENV** จะตั้งค่าผ่าน Web UI แทน
-
-⚠️ **ENCRYPTION_KEY ต้องเก็บเป็นความลับ** - อย่า commit ลง git หรือแชร์ให้คนอื่น
+(Gmail/Telegram ตั้งค่าผ่าน Web UI ภายหลัง)
 
 ---
 
 ### Step 4: Configure Volumes (Persistent Storage)
 
-**สำคัญมาก:** ต้องสร้าง Volume เพื่อเก็บ database ไม่ให้หายเมื่อ restart container
+ไปที่ **Mounts** → **เพิ่ม Volume Mount**
 
-ใน Easypanel → App Settings → **Mounts** (หรือ Volumes):
+กรอกข้อมูล:
 
-**คลิก "เพิ่ม Volume Mount"** และกรอก:
-
-| ฟิลด์ | ค่า | คำอธิบาย |
-|------|-----|----------|
-| **ชื่อ** | `data` | ชื่อ volume (ตั้งอะไรก็ได้) |
-| **เส้นทางเชื่อมต่อ** | `/app/data` | **ต้องเป็นค่านี้เท่านั้น** |
-
-**หมายเหตุ:**
-- ✅ ใช้ **Volume Mount** (ไม่ใช่ Bind Mount หรือ File Mount)
-- ✅ **เส้นทางเชื่อมต่อ** ต้องเป็น `/app/data` (ตรงกับที่ Docker ตั้งไว้)
-- ✅ **ชื่อ** ตั้งอะไรก็ได้ (แนะนำใช้ `data` เพื่อความชัดเจน)
-- ⚠️ **Volume นี้จำเป็นมาก** - เก็บ SQLite database ทั้งหมด
-- 📌 สามารถเพิ่ม `/app/logs` volume ได้ (optional) ถ้าต้องการเก็บ logs
-
-**ตัวอย่างการกรอก:**
 ```
 ชื่อ: data
 เส้นทางเชื่อมต่อ: /app/data
 ```
 
-หรือถ้าต้องการเก็บ logs ด้วย:
-```
-ชื่อ: logs
-เส้นทางเชื่อมต่อ: /app/logs
-```
+**จบ!** (เก็บ database ไม่ให้หาย)
 
 ---
 
 ### Step 5: Configure Port & Domain
 
-**Port Mapping:**
-- **Container Port:** `80`
-- **Protocol:** HTTP
-- **Public:** เปิดให้ public
+**Port:**
+```
+Container Port: 80
+Protocol: HTTP
+Public: ✓ เปิด
+```
 
-**Domain:**
-- ใช้ Easypanel subdomain: `your-app.easypanel.host`
-- หรือตั้ง Custom Domain ของคุณเอง
+**Domain:** ใช้ของ Easypanel หรือตั้งเอง
 
-**SSL/HTTPS:**
-- เปิด "Auto SSL" เพื่อใช้ HTTPS อัตโนมัติ ✅
+**SSL:** เปิด Auto SSL
 
 ---
 
@@ -157,132 +120,62 @@ Value: 5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
 
 ### Step 7: Initialize Database
 
-**หลัง deployment สำเร็จ** ต้อง initialize database ก่อนใช้งาน:
+**หลัง deploy สำเร็จ** ไปที่ App → **Shell**
 
-**วิธีที่ 1: ผ่าน Easypanel Shell**
-1. ไปที่ App → **Shell** หรือ **Terminal**
-2. รันคำสั่ง:
-   ```bash
-   python -c "from backend.core.database import init_db; init_db()"
-   ```
+รันคำสั่ง:
 
-**วิธีที่ 2: ผ่าน Docker Exec** (ถ้า deploy บน VPS)
 ```bash
-docker exec -it <container-name> python -c "from backend.core.database import init_db; init_db()"
+python -c "from backend.core.database import init_db; init_db()"
 ```
 
-**ตรวจสอบว่า database สร้างสำเร็จ:**
-```bash
-sqlite3 data/data.db ".tables"
+เสร็จ!
+
+---
+
+### Step 8: เข้าใช้งาน
+
+เปิด: `https://your-app.easypanel.host`
+
+จะเห็น Dashboard แล้ว! 🎉
+
+---
+
+### Step 9: ตั้งค่าผ่าน Web UI
+
+**1. เพิ่ม Gmail Account:**
+
+Gmail Accounts → Add Account → กรอก:
+```
+Email: your-email@gmail.com
+App Password: <สร้างจาก https://myaccount.google.com/apppasswords>
+IMAP Server: imap.gmail.com
+IMAP Port: 993
 ```
 
-ต้องเห็น 5 tables:
-- `gmail_accounts`
-- `notification_channels`
-- `filter_rules`
-- `notification_logs`
-- `config_settings`
+**2. เพิ่ม Telegram Channel:**
 
----
+Notification Channels → Add Channel → กรอก:
+```
+Type: Telegram
+Name: My Telegram
+Bot Token: <จาก @BotFather>
+Chat ID: <จาก @getidsbot>
+```
 
-### Step 8: เข้าใช้งาน Web UI
+**3. สร้าง Filter Rule:**
 
-เปิดเว็บไปที่ domain ที่ตั้งค่าไว้:
+Filter Rules → Add Rule → กรอก:
+```
+Gmail Account: <เลือก account>
+Rule Name: Banking Alerts
+Field: from
+Match Type: contains
+Match Value: bank.com
+Channel: <เลือก channel>
+Priority: 10
+```
 
-- **Frontend:** `https://your-app.easypanel.host`
-- **API Docs:** `https://your-app.easypanel.host/api/docs`
-
-ตอนนี้จะเห็น **Gmail Notifier Dashboard** แล้ว! 🎉
-
----
-
-### Step 9: การตั้งค่าผ่าน Web UI
-
-**ไม่ต้องแก้ไข ENV variables อีก** ตั้งค่าทุกอย่างผ่าน Web UI:
-
-#### 1. เพิ่ม Gmail Account
-
-1. ไปที่ **Gmail Accounts** → **Add Account**
-2. กรอก:
-   - **Email:** `your-email@gmail.com`
-   - **App Password:** [สร้างจาก Google](https://myaccount.google.com/apppasswords)
-   - **IMAP Server:** `imap.gmail.com` (default)
-   - **IMAP Port:** `993` (default)
-3. คลิก **Save**
-
-**วิธีสร้าง Gmail App Password:**
-1. ไปที่ https://myaccount.google.com/apppasswords
-2. สร้าง App Password ใหม่ (ต้องเปิด 2-Step Verification ก่อน)
-3. คัดลอก password 16 ตัว
-
----
-
-#### 2. เพิ่ม Notification Channel
-
-**สำหรับ Telegram:**
-
-1. ไปที่ **Notification Channels** → **Add Channel**
-2. เลือก **Type:** `Telegram`
-3. กรอก:
-   - **Name:** `My Telegram` (ชื่ออะไรก็ได้)
-   - **Bot Token:** `123456:ABC...` (จาก [@BotFather](https://t.me/BotFather))
-   - **Chat ID:** `-1001234567890` (จาก [@getidsbot](https://t.me/getidsbot))
-4. คลิก **Save**
-
-**วิธีหา Telegram Bot Token:**
-1. คุยกับ [@BotFather](https://t.me/BotFather)
-2. ส่ง `/newbot`
-3. ตั้งชื่อ bot
-4. คัดลอก **Bot Token**
-
-**วิธีหา Chat ID:**
-1. เพิ่ม bot เข้า group/channel
-2. คุยกับ [@getidsbot](https://t.me/getidsbot)
-3. ส่ง `/start`
-4. คัดลอก **Chat ID** (เลขติดลบ สำหรับ groups)
-
-**สำหรับ LINE Notify:**
-1. Type: `LINE`
-2. [สร้าง Token](https://notify-bot.line.me/my/)
-3. กรอก Access Token
-
-**สำหรับ Webhook:**
-1. Type: `Webhook`
-2. กรอก URL และ Method (POST/GET)
-
----
-
-#### 3. สร้าง Filter Rule
-
-1. ไปที่ **Filter Rules** → **Add Rule**
-2. กรอก:
-   - **Gmail Account:** เลือก account ที่สร้างไว้
-   - **Rule Name:** `Banking Alerts` (ชื่ออะไรก็ได้)
-   - **Field:** `from` (หรือ `subject`, `body`)
-   - **Match Type:** `contains` (หรือ `regex`, `equals`)
-   - **Match Value:** `bank.com` (คำที่ต้องการกรอง)
-   - **Channel:** เลือก notification channel
-   - **Priority:** `10` (เลขน้อย = ลำดับสูง)
-3. คลิก **Save**
-
-**ตัวอย่าง Filter Rules:**
-
-| Rule Name | Field | Match Type | Match Value | Priority |
-|-----------|-------|------------|-------------|----------|
-| Banking | from | contains | bank | 10 |
-| Invoice | subject | contains | invoice | 20 |
-| All Gmail | from | contains | @gmail.com | 50 |
-| Default | from | contains | * | 99 |
-
----
-
-#### 4. ดู Notification Logs
-
-ไปที่ **Dashboard** → **Recent Logs** เพื่อดู:
-- อีเมลที่ได้รับ
-- Rule ที่ match
-- Notification ที่ส่งไป
-- Status (sent/failed)
+**เสร็จ!** ระบบจะเริ่มตรวจสอบและส่ง notification อัตโนมัติ
 
 ---
 
@@ -755,50 +648,40 @@ chmod 600 .env
 
 ---
 
-## ✅ Quick Summary
+## ✅ สรุปสั้นๆ
 
-### สำหรับ Easypanel (Recommended)
+### Deploy บน Easypanel
 
-**7 ขั้นตอนง่ายๆ:**
-
-1. **สร้าง ENCRYPTION_KEY:**
+1. **สร้าง key:**
    ```bash
    openssl rand -base64 32
    ```
-   (เก็บ key ไว้ใช้ในขั้นตอนต่อไป)
 
-2. **Create App** → Git Repository:
-   - URL: `https://github.com/Endlessedwork/gmail-notifier.git`
+2. **Create App:**
+   - Git: `https://github.com/Endlessedwork/gmail-notifier.git`
    - Branch: `main`
-   - Build Method: Dockerfile
 
-3. **ตั้งค่า Environment Variable:**
-   - Key: `ENCRYPTION_KEY`
-   - Value: `<key-ที่สร้างในขั้นตอนที่-1>`
-   - (แค่นี้ตัวเดียว!)
+3. **ENV:**
+   ```
+   ENCRYPTION_KEY=<key-จากขั้นตอนที่-1>
+   ```
 
-4. **ตั้งค่า Volume Mount:**
-   - Type: Volume Mount
-   - ชื่อ: `data`
-   - เส้นทางเชื่อมต่อ: `/app/data`
+4. **Volume Mount:**
+   ```
+   ชื่อ: data
+   เส้นทางเชื่อมต่อ: /app/data
+   ```
 
-5. **Deploy!** (รอ 3-5 นาที)
+5. **Deploy** (รอ 3-5 นาที)
 
-6. **Initialize Database** (ผ่าน Shell):
+6. **Init DB** (ผ่าน Shell):
    ```bash
    python -c "from backend.core.database import init_db; init_db()"
    ```
 
-7. **เข้า Web UI** → ตั้งค่า Gmail/Telegram/Rules
+7. **เข้า Web UI** → ตั้งค่า Gmail/Telegram
 
-**ง่ายมาก!** ไม่ต้องแก้ไข code หรือ config files เลย ตั้งค่าทุกอย่างผ่าน Web UI! 🎉
-
----
-
-### จำไว้ว่า:
-- ✅ ENV ใส่แค่ `ENCRYPTION_KEY` ตัวเดียว
-- ✅ Volume Mount ต้องเป็น `/app/data` (เก็บ database)
-- ✅ Gmail/Telegram/Rules ตั้งค่าผ่าน Web UI (ไม่ใช่ ENV)
+**จบ!** 🚀
 
 ---
 
