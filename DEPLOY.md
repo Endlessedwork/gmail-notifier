@@ -62,43 +62,72 @@ openssl rand -base64 32
 
 ### Step 3: Configure Environment Variables
 
-ใน **Environment Variables** เพิ่มตัวแปรเหล่านี้:
+ใน Easypanel → App Settings → **Environment** (หรือ Environment Variables):
 
-```bash
-# REQUIRED: Encryption Key (จากขั้นตอนที่ 1)
-ENCRYPTION_KEY=5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
+**คลิก "Add Environment Variable"** และเพิ่ม:
 
-# Database (ใช้ค่าเริ่มต้น)
-DATABASE_URL=sqlite:///app/data/data.db
+**ค่าที่จำเป็น (REQUIRED):**
 
-# Worker Settings (ปรับได้ตามต้องการ)
-CHECK_INTERVAL=60
-MAX_BODY_LENGTH=300
+| Key | Value | คำอธิบาย |
+|-----|-------|----------|
+| `ENCRYPTION_KEY` | `<key-จากขั้นตอนที่-1>` | **จำเป็นมาก** - ใช้เข้ารหัส Gmail passwords |
 
-# Timezone
-TZ=Asia/Bangkok
-
-# Development
-PYTHONUNBUFFERED=1
+**ตัวอย่าง:**
+```
+Key: ENCRYPTION_KEY
+Value: 5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
 ```
 
-**หมายเหตุ:**
-- ✅ **ENCRYPTION_KEY เท่านั้นที่จำเป็นต้องตั้งค่า**
-- ค่าอื่นๆ มีค่าเริ่มต้นแล้ว สามารถปรับแต่งได้ตามต้องการ
-- **ไม่ต้องตั้งค่า Gmail/Telegram ใน ENV** จะตั้งค่าผ่าน Web UI แทน
+**ค่าเสริม (OPTIONAL)** - มีค่าเริ่มต้นแล้ว ไม่ต้องใส่ก็ได้:
+
+| Key | Value | คำอธิบาย |
+|-----|-------|----------|
+| `DATABASE_URL` | `sqlite:///app/data/data.db` | เส้นทาง database (ใช้ค่าเริ่มต้น) |
+| `CHECK_INTERVAL` | `60` | ตรวจสอบอีเมลทุกกี่วินาที (default: 60) |
+| `MAX_BODY_LENGTH` | `300` | ความยาว email preview (default: 300) |
+| `TZ` | `Asia/Bangkok` | Timezone (default: Asia/Bangkok) |
+| `PYTHONUNBUFFERED` | `1` | สำหรับ logging (แนะนำให้ใส่) |
+
+**สรุป:**
+- ✅ **จำเป็นต้องใส่แค่ `ENCRYPTION_KEY` เท่านั้น**
+- ✅ ค่าอื่นๆ มีค่าเริ่มต้นแล้ว (ใส่เพิ่มได้ถ้าต้องการปรับแต่ง)
+- ✅ **ไม่ต้องใส่ Gmail/Telegram ใน ENV** จะตั้งค่าผ่าน Web UI แทน
+
+⚠️ **ENCRYPTION_KEY ต้องเก็บเป็นความลับ** - อย่า commit ลง git หรือแชร์ให้คนอื่น
 
 ---
 
 ### Step 4: Configure Volumes (Persistent Storage)
 
-ใน **Volumes** (หรือ Mounts) เพิ่ม:
+**สำคัญมาก:** ต้องสร้าง Volume เพื่อเก็บ database ไม่ให้หายเมื่อ restart container
 
-| Volume Name | Mount Path | Size | คำอธิบาย |
-|-------------|------------|------|---------|
-| `data` | `/app/data` | 1 GB | **จำเป็น** - เก็บ SQLite database |
-| `logs` | `/app/logs` | 500 MB | Optional - เก็บ application logs |
+ใน Easypanel → App Settings → **Mounts** (หรือ Volumes):
 
-⚠️ **Volume `/app/data` จำเป็นมาก** เพราะเก็บ database ที่มีการตั้งค่าทั้งหมด
+**คลิก "เพิ่ม Volume Mount"** และกรอก:
+
+| ฟิลด์ | ค่า | คำอธิบาย |
+|------|-----|----------|
+| **ชื่อ** | `data` | ชื่อ volume (ตั้งอะไรก็ได้) |
+| **เส้นทางเชื่อมต่อ** | `/app/data` | **ต้องเป็นค่านี้เท่านั้น** |
+
+**หมายเหตุ:**
+- ✅ ใช้ **Volume Mount** (ไม่ใช่ Bind Mount หรือ File Mount)
+- ✅ **เส้นทางเชื่อมต่อ** ต้องเป็น `/app/data` (ตรงกับที่ Docker ตั้งไว้)
+- ✅ **ชื่อ** ตั้งอะไรก็ได้ (แนะนำใช้ `data` เพื่อความชัดเจน)
+- ⚠️ **Volume นี้จำเป็นมาก** - เก็บ SQLite database ทั้งหมด
+- 📌 สามารถเพิ่ม `/app/logs` volume ได้ (optional) ถ้าต้องการเก็บ logs
+
+**ตัวอย่างการกรอก:**
+```
+ชื่อ: data
+เส้นทางเชื่อมต่อ: /app/data
+```
+
+หรือถ้าต้องการเก็บ logs ด้วย:
+```
+ชื่อ: logs
+เส้นทางเชื่อมต่อ: /app/logs
+```
 
 ---
 
@@ -730,15 +759,46 @@ chmod 600 .env
 
 ### สำหรับ Easypanel (Recommended)
 
-1. สร้าง `ENCRYPTION_KEY`
-2. Create App → Git Repository
-3. ตั้งค่า ENV: `ENCRYPTION_KEY`
-4. ตั้งค่า Volume: `/app/data`
-5. Deploy!
-6. Initialize database
-7. เข้า Web UI → ตั้งค่า Gmail/Telegram/Rules
+**7 ขั้นตอนง่ายๆ:**
 
-**ไม่ต้องแก้ไข code หรือ config files** ตั้งค่าทุกอย่างผ่าน Web UI! 🎉
+1. **สร้าง ENCRYPTION_KEY:**
+   ```bash
+   openssl rand -base64 32
+   ```
+   (เก็บ key ไว้ใช้ในขั้นตอนต่อไป)
+
+2. **Create App** → Git Repository:
+   - URL: `https://github.com/Endlessedwork/gmail-notifier.git`
+   - Branch: `main`
+   - Build Method: Dockerfile
+
+3. **ตั้งค่า Environment Variable:**
+   - Key: `ENCRYPTION_KEY`
+   - Value: `<key-ที่สร้างในขั้นตอนที่-1>`
+   - (แค่นี้ตัวเดียว!)
+
+4. **ตั้งค่า Volume Mount:**
+   - Type: Volume Mount
+   - ชื่อ: `data`
+   - เส้นทางเชื่อมต่อ: `/app/data`
+
+5. **Deploy!** (รอ 3-5 นาที)
+
+6. **Initialize Database** (ผ่าน Shell):
+   ```bash
+   python -c "from backend.core.database import init_db; init_db()"
+   ```
+
+7. **เข้า Web UI** → ตั้งค่า Gmail/Telegram/Rules
+
+**ง่ายมาก!** ไม่ต้องแก้ไข code หรือ config files เลย ตั้งค่าทุกอย่างผ่าน Web UI! 🎉
+
+---
+
+### จำไว้ว่า:
+- ✅ ENV ใส่แค่ `ENCRYPTION_KEY` ตัวเดียว
+- ✅ Volume Mount ต้องเป็น `/app/data` (เก็บ database)
+- ✅ Gmail/Telegram/Rules ตั้งค่าผ่าน Web UI (ไม่ใช่ ENV)
 
 ---
 
