@@ -1,70 +1,95 @@
-# 📧 Gmail-Telegram Notifier
+# Gmail Notifier Management Dashboard
 
-แจ้งเตือนอีเมลใหม่จาก Gmail ไปยัง Telegram แบบ real-time
+ระบบแจ้งเตือนอีเมลจาก Gmail ไปยัง Telegram พร้อม Web UI สำหรับจัดการ
 
-## ✨ Features
+## Features
 
-- ตรวจสอบอีเมลใหม่อัตโนมัติ
-- รองรับภาษาไทยและ Unicode
-- แสดง preview เนื้อหาอีเมล
-- ส่งข้อความทดสอบตอนเริ่มทำงาน
-- Graceful shutdown
-- Auto-restart เมื่อเกิดข้อผิดพลาด
+- ✅ รับการแจ้งเตือนอีเมลจาก Gmail แบบ Real-time
+- ✅ ส่งข้อความไปยัง Telegram Channels ต่างๆ
+- ✅ กรองอีเมลด้วย Filter Rules (From, Subject)
+- ✅ Web UI สำหรับจัดการ Gmail Accounts, Telegram Channels, Filter Rules
+- ✅ Dashboard แสดงสถิติและ Logs
+- ✅ Hot-reload configuration (ไม่ต้อง restart)
 
-## 🔧 Setup
+## Tech Stack
 
-### 1. สร้าง Gmail App Password
+**Backend:**
+- Python 3.11
+- IMAPlib (Gmail IMAP)
+- Telegram Bot API
 
-1. ไปที่ https://myaccount.google.com/apppasswords
-2. สร้าง App Password สำหรับ "Mail"
-3. เก็บ password 16 ตัวที่ได้
+**Frontend:**
+- React 18 + TypeScript
+- Vite
+- TanStack Query
+- Tailwind CSS + shadcn/ui
 
-> ⚠️ ต้องเปิด 2-Step Verification ก่อนถึงจะสร้าง App Password ได้
+**Deployment:**
+- Docker + Docker Compose
+- Nginx (serve frontend)
+- Supervisor (process management)
 
-### 2. สร้าง Telegram Bot
+## Deployment on Easypanel
 
-1. คุยกับ [@BotFather](https://t.me/BotFather)
-2. ส่ง `/newbot` → ตั้งชื่อ
-3. เก็บ **Bot Token** ที่ได้
-4. เปิดแชทกับ bot แล้วส่งข้อความอะไรก็ได้
-5. เปิด `https://api.telegram.org/bot<TOKEN>/getUpdates` → หา `chat.id`
+1. **Create New Service:**
+   - Service Type: Docker
+   - Repository: <your-git-repo>
+   - Branch: main
 
-### 3. Deploy
+2. **Build Settings:**
+   - Dockerfile Path: `./Dockerfile`
+   - Build Context: `.`
 
-#### Docker Compose (Local/Server)
+3. **Port Mapping:**
+   - Container Port: 80
+   - Public Port: 80 (หรือ custom)
 
-```bash
-# แก้ไขค่าใน docker-compose.yml ก่อน
-docker-compose up -d
+4. **Volumes:**
+   - `./config.json` → `/app/config.json`
+   - `./logs` → `/app/logs`
+
+5. **Environment Variables:**
+   - `TZ=Asia/Bangkok`
+
+6. **Deploy!**
+
+## Configuration
+
+สร้างไฟล์ `config.json`:
+
+```json
+{
+  "telegram": {
+    "bot_token": "YOUR_BOT_TOKEN"
+  },
+  "credentials": [
+    {
+      "email": "your-email@gmail.com",
+      "password": "your-app-password"
+    }
+  ],
+  "rules": [
+    {
+      "id": "rule_1",
+      "name": "All Emails",
+      "field": "from",
+      "match": "*",
+      "chat_id": "-1001234567890",
+      "priority": 99,
+      "enabled": true
+    }
+  ],
+  "settings": {
+    "imap_server": "imap.gmail.com",
+    "imap_port": 993,
+    "check_interval": 60,
+    "max_body_length": 300,
+    "default_chat_id": "-1001234567890",
+    "log_level": "INFO"
+  }
+}
 ```
 
-#### Easypanel
+## License
 
-1. สร้าง App ใหม่ → เลือก Docker
-2. ใส่ Dockerfile path
-3. ตั้ง Environment Variables:
-   - `BOT_TOKEN` = Bot token จาก BotFather
-   - `CHAT_ID` = Chat ID ของคุณ
-   - `EMAIL_USER` = อีเมล Gmail
-   - `EMAIL_PASS` = App Password 16 ตัว
-   - `CHECK_INTERVAL` = 60 (วินาที)
-4. Deploy!
-
-## ⚙️ Environment Variables
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| BOT_TOKEN | ✅ | - | Telegram Bot Token |
-| CHAT_ID | ✅ | - | Telegram Chat ID |
-| EMAIL_USER | ✅ | - | Gmail address |
-| EMAIL_PASS | ✅ | - | Gmail App Password |
-| IMAP_SERVER | ❌ | imap.gmail.com | IMAP server |
-| IMAP_PORT | ❌ | 993 | IMAP port |
-| CHECK_INTERVAL | ❌ | 60 | Check interval (seconds) |
-| MAX_BODY_LENGTH | ❌ | 300 | Email preview length |
-
-## 📝 Notes
-
-- Script จะ mark email เป็น "read" หลังส่งแจ้งเตือนแล้ว
-- ใช้ `BODY.PEEK[]` ในการอ่าน เพื่อไม่ให้เปลี่ยนสถานะก่อนส่งแจ้งเตือนสำเร็จ
-- รองรับ multiple email accounts โดยรัน container หลายตัว
+MIT

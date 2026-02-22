@@ -1,0 +1,30 @@
+{
+  "telegram": {
+    "bot_token": "YOUR_BOT_TOKEN_HERE"
+  },
+  "credentials": [
+    {
+      "email": "your-email@gmail.com",
+      "password": "your-gmail-app-password"
+    }
+  ],
+  "rules": [
+    {
+      "id": "default_rule",
+      "name": "All Emails to Default Channel",
+      "field": "from",
+      "match": "*",
+      "chat_id": "YOUR_CHAT_ID_HERE",
+      "priority": 99,
+      "enabled": true
+    }
+  ],
+  "settings": {
+    "imap_server": "imap.gmail.com",
+    "imap_port": 993,
+    "check_interval": 60,
+    "max_body_length": 300,
+    "default_chat_id": "YOUR_DEFAULT_CHAT_ID_HERE",
+    "log_level": "INFO"
+  }
+}
