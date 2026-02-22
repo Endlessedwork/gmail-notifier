@@ -60,23 +60,19 @@ openssl rand -base64 32
 
 ### Step 3: Configure Environment Variables
 
-ไปที่ **Environment** → **Add Environment Variable**
+ไปที่ **Environment** → **Add**
 
-**ใส่แค่ตัวเดียว:**
-
+กรอก:
 ```
 Key: ENCRYPTION_KEY
-Value: <key-ที่สร้างจากขั้นตอนที่-1>
 ```
 
-**ตัวอย่าง:**
 ```
-ENCRYPTION_KEY=5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
+Value: 5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
 ```
+(ใช้ key ที่สร้างจากขั้นตอนที่ 1)
 
-**จบ!** ไม่ต้องใส่อะไรเพิ่ม
-
-(Gmail/Telegram ตั้งค่าผ่าน Web UI ภายหลัง)
+**จบ!** ใส่ตัวเดียวพอ
 
 ---
 
@@ -84,11 +80,14 @@ ENCRYPTION_KEY=5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
 
 ไปที่ **Mounts** → **เพิ่ม Volume Mount**
 
-กรอกข้อมูล:
-
+ช่อง "ชื่อ":
 ```
-ชื่อ: data
-เส้นทางเชื่อมต่อ: /app/data
+data
+```
+
+ช่อง "เส้นทางเชื่อมต่อ":
+```
+/app/data
 ```
 
 **จบ!** (เก็บ database ไม่ให้หาย)
@@ -656,21 +655,19 @@ chmod 600 .env
    ```bash
    openssl rand -base64 32
    ```
+   เก็บไว้ใช้ขั้นตอนที่ 3
 
 2. **Create App:**
    - Git: `https://github.com/Endlessedwork/gmail-notifier.git`
    - Branch: `main`
 
-3. **ENV:**
-   ```
-   ENCRYPTION_KEY=<key-จากขั้นตอนที่-1>
-   ```
+3. **Add ENV:**
+   - Key: `ENCRYPTION_KEY`
+   - Value: `<key-จากขั้นตอนที่-1>`
 
-4. **Volume Mount:**
-   ```
-   ชื่อ: data
-   เส้นทางเชื่อมต่อ: /app/data
-   ```
+4. **Add Volume Mount:**
+   - ชื่อ: `data`
+   - เส้นทางเชื่อมต่อ: `/app/data`
 
 5. **Deploy** (รอ 3-5 นาที)
 
