@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard,
   Mail,
-  MessageCircle,
+  Bell,
   Filter,
   Settings as SettingsIcon,
 } from 'lucide-react'
@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Gmail Accounts', href: '/gmail', icon: Mail },
-  { name: 'Telegram Channels', href: '/telegram', icon: MessageCircle },
+  { name: 'Notification Channels', href: '/channels', icon: Bell },
   { name: 'Filter Rules', href: '/filters', icon: Filter },
   { name: 'Settings', href: '/settings', icon: SettingsIcon },
 ]

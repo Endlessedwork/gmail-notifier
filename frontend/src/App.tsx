@@ -4,7 +4,7 @@ import { Toaster } from 'sonner'
 import { Layout } from './components/layout/Layout'
 import { Dashboard } from './components/dashboard/Dashboard'
 import { GmailManagement } from './components/gmail/GmailManagement'
-import { TelegramManagement } from './components/telegram/TelegramManagement'
+import { ChannelManagement } from './components/channels/ChannelManagement'
 import { FilterManagement } from './components/filters/FilterManagement'
 import { Settings } from './components/settings/Settings'
 
@@ -25,7 +25,7 @@ function App() {
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="gmail" element={<GmailManagement />} />
-            <Route path="telegram" element={<TelegramManagement />} />
+            <Route path="channels" element={<ChannelManagement />} />
             <Route path="filters" element={<FilterManagement />} />
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -11,50 +11,79 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-
-interface GmailAccount {
-  id: string
-  email: string
-  password: string
-  enabled: boolean
-}
+import { Loader2 } from 'lucide-react'
+import { useCreateGmailAccount, useUpdateGmailAccount } from '@/hooks/useGmailAccounts'
+import type { GmailAccount } from '@/types'
 
 interface GmailDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (account: Partial<GmailAccount>) => void
   account?: GmailAccount
-  isLoading?: boolean
 }
 
 export function GmailDialog({
   open,
   onOpenChange,
-  onSubmit,
   account,
-  isLoading,
 }: GmailDialogProps) {
-  const [formData, setFormData] = useState<Partial<GmailAccount>>({
+  const [formData, setFormData] = useState({
     email: '',
     password: '',
+    imap_server: 'imap.gmail.com',
+    imap_port: 993,
     enabled: true,
   })
 
+  const createAccount = useCreateGmailAccount()
+  const updateAccount = useUpdateGmailAccount()
+
+  const isLoading = createAccount.isPending || updateAccount.isPending
+
   useEffect(() => {
     if (account) {
-      setFormData(account)
+      setFormData({
+        email: account.email,
+        password: '',
+        imap_server: account.imap_server,
+        imap_port: account.imap_port,
+        enabled: account.enabled,
+      })
     } else {
       setFormData({
         email: '',
         password: '',
+        imap_server: 'imap.gmail.com',
+        imap_port: 993,
         enabled: true,
       })
     }
   }, [account, open])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+
+    if (account) {
+      const updateData: any = {
+        email: formData.email,
+        imap_server: formData.imap_server,
+        imap_port: formData.imap_port,
+        enabled: formData.enabled,
+      }
+      if (formData.password) {
+        updateData.password = formData.password
+      }
+
+      updateAccount.mutate(
+        { id: account.id, data: updateData },
+        {
+          onSuccess: () => onOpenChange(false),
+        }
+      )
+    } else {
+      createAccount.mutate(formData, {
+        onSuccess: () => onOpenChange(false),
+      })
+    }
   }
 
   return (
@@ -105,6 +134,35 @@ export function GmailDialog({
             </p>
           </div>
 
+          {/* IMAP Server */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="imap_server">IMAP Server</Label>
+              <Input
+                id="imap_server"
+                type="text"
+                value={formData.imap_server}
+                onChange={(e) =>
+                  setFormData({ ...formData, imap_server: e.target.value })
+                }
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="imap_port">IMAP Port</Label>
+              <Input
+                id="imap_port"
+                type="number"
+                value={formData.imap_port}
+                onChange={(e) =>
+                  setFormData({ ...formData, imap_port: parseInt(e.target.value) })
+                }
+                required
+              />
+            </div>
+          </div>
+
           {/* Enabled */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
@@ -132,7 +190,8 @@ export function GmailDialog({
               ยกเลิก
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'กำลังบันทึก...' : account ? 'บันทึกการแก้ไข' : 'เพิ่มบัญชี'}
+              {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {account ? 'บันทึกการแก้ไข' : 'เพิ่มบัญชี'}
             </Button>
           </DialogFooter>
         </form>

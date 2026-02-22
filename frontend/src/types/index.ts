@@ -1,40 +1,171 @@
-export interface FilterRule {
-  id: string
-  name: string
-  enabled: boolean
-  field: 'from' | 'subject'
-  match: string
-  chat_id: string
-  priority: number
-  created_at?: string
-  updated_at?: string
-}
-
-export interface Settings {
-  check_interval: number
-  max_body_length: number
+// Gmail Account Types
+export interface GmailAccount {
+  id: number
+  email: string
   imap_server: string
   imap_port: number
-  default_chat_id: string
-  log_level: 'DEBUG' | 'INFO' | 'WARNING' | 'ERROR'
+  enabled: boolean
+  last_checked_at: string | null
+  created_at: string
+  updated_at: string
 }
 
-export interface Config {
-  version: string
-  settings: Settings
-  filter_rules: FilterRule[]
-  metadata?: {
-    last_modified: string
-    last_modified_by: string
-  }
+export interface GmailAccountCreate {
+  email: string
+  password: string
+  imap_server?: string
+  imap_port?: number
+  enabled?: boolean
 }
 
-export interface Credentials {
-  telegram_bot_token: string
-  gmail_email: string
-  gmail_password: string
+export interface GmailAccountUpdate {
+  email?: string
+  password?: string
+  imap_server?: string
+  imap_port?: number
+  enabled?: boolean
 }
 
+// Notification Channel Types
+export type ChannelType = 'telegram' | 'line' | 'webhook'
+
+export interface TelegramConfig {
+  bot_token: string
+  chat_id: string
+}
+
+export interface LineConfig {
+  access_token: string
+}
+
+export interface WebhookConfig {
+  url: string
+  headers?: Record<string, string>
+}
+
+export type ChannelConfig = TelegramConfig | LineConfig | WebhookConfig
+
+export interface NotificationChannel {
+  id: number
+  type: ChannelType
+  name: string
+  config: Record<string, any>
+  enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface NotificationChannelCreate {
+  type: ChannelType
+  name: string
+  config: ChannelConfig
+  enabled?: boolean
+}
+
+export interface NotificationChannelUpdate {
+  type?: ChannelType
+  name?: string
+  config?: ChannelConfig
+  enabled?: boolean
+}
+
+// Filter Rule Types
+export type FilterField = 'from' | 'subject' | 'body'
+export type MatchType = 'contains' | 'regex' | 'equals'
+
+export interface FilterRule {
+  id: number
+  gmail_account_id: number
+  name: string
+  field: FilterField
+  match_type: MatchType
+  match_value: string
+  channel_id: number
+  priority: number
+  enabled: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface FilterRuleCreate {
+  gmail_account_id: number
+  name: string
+  field: FilterField
+  match_type?: MatchType
+  match_value: string
+  channel_id: number
+  priority?: number
+  enabled?: boolean
+}
+
+export interface FilterRuleUpdate {
+  name?: string
+  field?: FilterField
+  match_type?: MatchType
+  match_value?: string
+  channel_id?: number
+  priority?: number
+  enabled?: boolean
+}
+
+// Notification Log Types
+export type NotificationStatus = 'pending' | 'sent' | 'failed'
+
+export interface NotificationLog {
+  id: number
+  gmail_account_id: number
+  filter_rule_id: number | null
+  channel_id: number
+  email_subject: string | null
+  email_from: string | null
+  email_date: string | null
+  status: NotificationStatus
+  error_message: string | null
+  sent_at: string | null
+  created_at: string
+}
+
+// Config Setting Types
+export interface ConfigSetting {
+  id: number
+  key: string
+  value: string
+  description: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface ConfigSettingUpdate {
+  value: string
+}
+
+// API Response Types
+export interface GmailAccountList {
+  total: number
+  accounts: GmailAccount[]
+}
+
+export interface NotificationChannelList {
+  total: number
+  channels: NotificationChannel[]
+}
+
+export interface FilterRuleList {
+  total: number
+  rules: FilterRule[]
+}
+
+export interface NotificationLogList {
+  total: number
+  logs: NotificationLog[]
+}
+
+export interface ConfigSettingList {
+  total: number
+  settings: ConfigSetting[]
+}
+
+// Legacy Types (for backward compatibility - will be removed)
 export interface LogEntry {
   timestamp: string
   level: 'INFO' | 'WARNING' | 'ERROR' | 'DEBUG'
@@ -55,23 +186,6 @@ export interface Metrics {
 
 export interface HealthStatus {
   status: 'healthy' | 'unhealthy'
-  timestamp: string
-  config_exists: boolean
-  logs_exists: boolean
-}
-
-export interface GmailAccount {
-  id: string
-  email: string
-  password: string
-  enabled: boolean
-  last_check?: string
-}
-
-export interface TelegramChannel {
-  id: string
-  name: string
-  bot_token: string
-  chat_id: string
-  enabled: boolean
+  timestamp?: string
+  database?: string
 }

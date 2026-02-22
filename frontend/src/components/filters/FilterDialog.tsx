@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { FilterRule } from '@/types'
+import type { FilterRule, GmailAccount, NotificationChannel, FilterField, MatchType } from '@/types'
 import {
   Dialog,
   DialogContent,
@@ -19,49 +19,81 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { Loader2 } from 'lucide-react'
+import { useCreateFilterRule, useUpdateFilterRule } from '@/hooks/useFilterRules'
 
 interface FilterDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (rule: Partial<FilterRule>) => void
   rule?: FilterRule
-  isLoading?: boolean
+  accounts: GmailAccount[]
+  channels: NotificationChannel[]
 }
 
 export function FilterDialog({
   open,
   onOpenChange,
-  onSubmit,
   rule,
-  isLoading,
+  accounts,
+  channels,
 }: FilterDialogProps) {
-  const [formData, setFormData] = useState<Partial<FilterRule>>({
+  const [formData, setFormData] = useState({
+    gmail_account_id: 0,
     name: '',
-    field: 'from',
-    match: '',
-    chat_id: '',
-    priority: 1,
+    field: 'from' as FilterField,
+    match_type: 'contains' as MatchType,
+    match_value: '',
+    channel_id: 0,
+    priority: 50,
     enabled: true,
   })
 
+  const createRule = useCreateFilterRule()
+  const updateRule = useUpdateFilterRule()
+
+  const isLoading = createRule.isPending || updateRule.isPending
+
   useEffect(() => {
     if (rule) {
-      setFormData(rule)
+      setFormData({
+        gmail_account_id: rule.gmail_account_id,
+        name: rule.name,
+        field: rule.field,
+        match_type: rule.match_type,
+        match_value: rule.match_value,
+        channel_id: rule.channel_id,
+        priority: rule.priority,
+        enabled: rule.enabled,
+      })
     } else {
       setFormData({
+        gmail_account_id: accounts[0]?.id || 0,
         name: '',
         field: 'from',
-        match: '',
-        chat_id: '',
-        priority: 1,
+        match_type: 'contains',
+        match_value: '',
+        channel_id: channels[0]?.id || 0,
+        priority: 50,
         enabled: true,
       })
     }
-  }, [rule, open])
+  }, [rule, open, accounts, channels])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onSubmit(formData)
+
+    if (rule) {
+      updateRule.mutate(
+        { id: rule.id, data: formData },
+        {
+          onSuccess: () => onOpenChange(false),
+        }
+      )
+    } else {
+      createRule.mutate(formData, {
+        onSuccess: () => onOpenChange(false),
+      })
+    }
   }
 
   return (
@@ -72,7 +104,7 @@ export function FilterDialog({
             {rule ? 'แก้ไข Filter Rule' : 'สร้าง Filter Rule ใหม่'}
           </DialogTitle>
           <DialogDescription>
-            กำหนดเงื่อนไขการกรองอีเมลและส่งไปยัง Telegram channel
+            กำหนดเงื่อนไขการกรองอีเมลและส่งไปยังช่องทางการแจ้งเตือน
           </DialogDescription>
         </DialogHeader>
 
@@ -91,13 +123,35 @@ export function FilterDialog({
             />
           </div>
 
+          {/* Gmail Account */}
+          <div className="space-y-2">
+            <Label htmlFor="gmail_account_id">Gmail Account</Label>
+            <Select
+              value={formData.gmail_account_id.toString()}
+              onValueChange={(value) =>
+                setFormData({ ...formData, gmail_account_id: parseInt(value) })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="เลือก Gmail Account" />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts.map((account) => (
+                  <SelectItem key={account.id} value={account.id.toString()}>
+                    {account.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Field */}
           <div className="space-y-2">
             <Label htmlFor="field">กรองจาก Field</Label>
             <Select
               value={formData.field}
               onValueChange={(value) =>
-                setFormData({ ...formData, field: value as 'from' | 'subject' })
+                setFormData({ ...formData, field: value as FilterField })
               }
             >
               <SelectTrigger>
@@ -105,52 +159,81 @@ export function FilterDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="from">From (ผู้ส่ง)</SelectItem>
-                <SelectItem value="subject">Subject (หัวเรื่อง)</SelectItem>
+                <SelectItem value="subject">Subject (หัวข้อ)</SelectItem>
+                <SelectItem value="body">Body (เนื้อหา)</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {/* Match Pattern */}
+          {/* Match Type */}
           <div className="space-y-2">
-            <Label htmlFor="match">ค้นหาคำที่มี</Label>
-            <Input
-              id="match"
-              placeholder="เช่น: customer@example.com หรือ Payment"
-              value={formData.match}
-              onChange={(e) =>
-                setFormData({ ...formData, match: e.target.value })
+            <Label htmlFor="match_type">รูปแบบการตรวจสอบ</Label>
+            <Select
+              value={formData.match_type}
+              onValueChange={(value) =>
+                setFormData({ ...formData, match_type: value as MatchType })
               }
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              ระบุคำหรือ email ที่ต้องการกรอง (ไม่ต้องใส่ *)
-            </p>
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="contains">Contains (มีคำนี้)</SelectItem>
+                <SelectItem value="equals">Equals (เหมือนกันทุกตัว)</SelectItem>
+                <SelectItem value="regex">Regex (รูปแบบ)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Chat ID */}
+          {/* Match Value */}
           <div className="space-y-2">
-            <Label htmlFor="chat_id">Telegram Chat ID</Label>
+            <Label htmlFor="match_value">ค่าที่ต้องการตรวจสอบ</Label>
             <Input
-              id="chat_id"
-              placeholder="เช่น: -1001234567890"
-              value={formData.chat_id}
+              id="match_value"
+              placeholder="เช่น: support@example.com"
+              value={formData.match_value}
               onChange={(e) =>
-                setFormData({ ...formData, chat_id: e.target.value })
+                setFormData({ ...formData, match_value: e.target.value })
               }
               required
             />
-            <p className="text-xs text-muted-foreground">
-              Chat ID ของ Telegram channel ที่จะส่งข้อความไป
-            </p>
+            {formData.match_type === 'regex' && (
+              <p className="text-xs text-muted-foreground">
+                ใช้ Regular Expression เช่น: ^.*@example\.com$
+              </p>
+            )}
+          </div>
+
+          {/* Channel */}
+          <div className="space-y-2">
+            <Label htmlFor="channel_id">ส่งไปที่ Channel</Label>
+            <Select
+              value={formData.channel_id.toString()}
+              onValueChange={(value) =>
+                setFormData({ ...formData, channel_id: parseInt(value) })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="เลือก Channel" />
+              </SelectTrigger>
+              <SelectContent>
+                {channels.map((channel) => (
+                  <SelectItem key={channel.id} value={channel.id.toString()}>
+                    {channel.name} ({channel.type})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Priority */}
           <div className="space-y-2">
-            <Label htmlFor="priority">ลำดับความสำคัญ (Priority)</Label>
+            <Label htmlFor="priority">ลำดับความสำคัญ (0-100)</Label>
             <Input
               id="priority"
               type="number"
-              min="1"
+              min="0"
+              max="100"
               value={formData.priority}
               onChange={(e) =>
                 setFormData({ ...formData, priority: parseInt(e.target.value) })
@@ -158,7 +241,7 @@ export function FilterDialog({
               required
             />
             <p className="text-xs text-muted-foreground">
-              ค่าน้อยจะถูกตรวจสอบก่อน (เริ่มจาก 1)
+              เลขน้อย = ความสำคัญสูง (จะถูกตรวจสอบก่อน)
             </p>
           </div>
 
@@ -167,7 +250,7 @@ export function FilterDialog({
             <div className="space-y-0.5">
               <Label htmlFor="enabled">เปิดใช้งาน</Label>
               <p className="text-xs text-muted-foreground">
-                เปิด/ปิดการทำงานของ rule นี้
+                เปิด/ปิดการใช้งาน rule นี้
               </p>
             </div>
             <Switch
@@ -189,7 +272,8 @@ export function FilterDialog({
               ยกเลิก
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'กำลังบันทึก...' : rule ? 'บันทึกการแก้ไข' : 'สร้าง Rule'}
+              {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {rule ? 'บันทึกการแก้ไข' : 'สร้าง Rule'}
             </Button>
           </DialogFooter>
         </form>
