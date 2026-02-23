@@ -5,6 +5,7 @@ Multi-channel notification sender
 
 import json
 import logging
+import html
 import requests
 from typing import Dict, Optional
 from datetime import datetime
@@ -89,20 +90,26 @@ class NotificationSender:
             logger.error(f"Missing bot_token or chat_id for {self.channel.name}")
             return False
 
+        # Telegram HTML parse mode requires escaping dynamic content
+        safe_rule_name = html.escape(rule_name) if rule_name else None
+        safe_sender = html.escape(sender or "")
+        safe_subject = html.escape(subject or "")
+        safe_date = html.escape(date_str or "")
+
         text = f"📧 <b>New Email</b>\n\n"
 
-        if rule_name:
-            text += f"🏷️ <b>Filter:</b> {rule_name}\n"
+        if safe_rule_name:
+            text += f"🏷️ <b>Filter:</b> {safe_rule_name}\n"
 
         text += (
-            f"<b>From:</b> {sender}\n"
-            f"<b>Subject:</b> {subject}\n"
-            f"<b>Date:</b> {date_str}\n"
+            f"<b>From:</b> {safe_sender}\n"
+            f"<b>Subject:</b> {safe_subject}\n"
+            f"<b>Date:</b> {safe_date}\n"
         )
 
         if body:
             clean_body = clean_html_tags(body)
-            text += f"\n<b>Preview:</b>\n<pre>{clean_body}</pre>"
+            text += f"\n<b>Preview:</b>\n<pre>{html.escape(clean_body)}</pre>"
 
         try:
             resp = requests.post(
