@@ -18,6 +18,7 @@ WORKDIR /app
 
 # Install nginx and supervisor
 RUN apt-get update && apt-get install -y \
+    curl \
     nginx \
     supervisor \
     && rm -rf /var/lib/apt/lists/*
