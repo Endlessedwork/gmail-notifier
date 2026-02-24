@@ -46,13 +46,16 @@ Build:
 
 ในแท็บ Environment (ตัวแปรสภาพแวดล้อม):
 
-ในช่อง text box ให้ก๊อปวางบรรทัดนี้:
+ในช่อง text box ให้ก๊อปวาง (แก้ค่าให้ตรงกับของคุณ):
 
 ENCRYPTION_KEY=5P1yDhydES1grYjM9UShBmSKDMtRUkBM7USQNsIKh80=
+ALLOWED_ORIGINS=*
 
-เปลี่ยน 5P1y... เป็น key ที่คุณสร้างจากขั้นตอนที่ 1
+(เปลี่ยน 5P1y... เป็น key ที่คุณสร้างจากขั้นตอนที่ 1)
 
-ใส่แค่บรรทัดเดียวนี้พอ ส่วน Gmail/Telegram จะตั้งค่าผ่าน Web UI ภายหลัง
+- **ALLOWED_ORIGINS=*** จำเป็นเพื่อให้เปิด Dashboard จากโดเมน Easypanel (เช่น https://js-docker-gmail-notifier.p70r4d.easypanel.host) แล้วเรียก API ได้
+- รูปแบบ: KEY=VALUE (เหมือน .env file ปกติ)
+- ส่วน Gmail/Telegram ตั้งค่าผ่าน Web UI ภายหลัง
 
 ---
 
@@ -155,6 +158,12 @@ https://your-app-name.easypanel.host
 
 🔧 Troubleshooting
 
+เปิด URL แล้วเข้าไม่ได้ / หน้าเปล่า / API error
+
+1. **Domain → Port 80**: ใน Domains ให้ชี้ไปที่ Port **80** (container เปิด nginx ที่ 80)
+2. **ALLOWED_ORIGINS**: ใส่ใน Environment เป็น `ALLOWED_ORIGINS=*` เพื่อให้เบราว์เซอร์เรียก API จากโดเมน deploy ได้
+3. **Rebuild**: หลัง push code ใหม่ (โดยเฉพาะ frontend) ให้ Deploy ใหม่เพื่อ build ใหม่
+
 Build Failed
 
 ตรวจสอบใน Logs tab:
@@ -171,7 +180,7 @@ Database Error
 
 รันใน Console:
 
-rm -f /app/data/data.db
+rm -f /app/data/gmail_notifier.db
 python -c "from backend.core.database import init_db; init_db()"
 
 ---

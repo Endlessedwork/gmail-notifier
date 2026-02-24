@@ -1,4 +1,5 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
+// Production: ใช้ relative path ให้ request ไปที่ same origin (nginx proxy /api → backend)
+const API_BASE = import.meta.env.VITE_API_URL || '/api/v1'
 
 export class APIError extends Error {
   constructor(
