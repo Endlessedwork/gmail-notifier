@@ -48,6 +48,11 @@ def health():
         }
     )
 
+@app.get(f"{settings.api_prefix}/health")
+def api_health():
+    """Health check endpoint under API prefix (used by container healthcheck)."""
+    return JSONResponse(content={"status": "healthy"})
+
 
 # Register routes
 app.include_router(gmail_accounts.router, prefix=settings.api_prefix)
