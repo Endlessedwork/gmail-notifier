@@ -160,9 +160,10 @@ https://your-app-name.easypanel.host
 
 เปิด URL แล้วเข้าไม่ได้ / หน้าเปล่า / API error
 
-1. **Domain → Port 80**: ใน Domains ให้ชี้ไปที่ Port **80** (container เปิด nginx ที่ 80)
-2. **ALLOWED_ORIGINS**: ใส่ใน Environment เป็น `ALLOWED_ORIGINS=*` เพื่อให้เบราว์เซอร์เรียก API จากโดเมน deploy ได้
-3. **Rebuild**: หลัง push code ใหม่ (โดยเฉพาะ frontend) ให้ Deploy ใหม่เพื่อ build ใหม่
+1. **Domain → Port 80**: ในแท็บ Domains ต้องชี้ domain ไปที่ Port **80** (container เปิด nginx ที่พอร์ต 80 เท่านั้น)
+2. **ALLOWED_ORIGINS**: ใน Environment ต้องมี `ALLOWED_ORIGINS=*` เพื่อให้เบราว์เซอร์เรียก API ได้
+3. **ดู Logs**: ไปที่แท็บ Logs ของ app → ดูว่ามี error จาก api หรือ worker หรือไม่ (ถ้า backend crash จะเห็นใน log)
+4. **Rebuild**: หลัง push code ใหม่ให้กด Deploy ใหม่
 
 Build Failed
 

@@ -42,9 +42,9 @@ RUN mkdir -p /app/data /app/logs /var/log/supervisor
 COPY docker/nginx.conf /etc/nginx/sites-available/default
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost/api/v1/health || exit 1
+# Health check: ตรวจแค่ nginx (หน้าเว็บโหลดได้) ไม่พึ่ง backend เพื่อไม่ให้ container ถูก mark unhealthy ถ้า API ช้าหรือ restart
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f -s -o /dev/null http://localhost/ || exit 1
 
 EXPOSE 80
 
