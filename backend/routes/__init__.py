@@ -3,7 +3,8 @@ from backend.routes import (
     notification_channels,
     filter_rules,
     notification_logs,
-    config_settings
+    config_settings,
+    compat,
 )
 
 __all__ = [
@@ -11,5 +12,6 @@ __all__ = [
     "notification_channels",
     "filter_rules",
     "notification_logs",
-    "config_settings"
+    "config_settings",
+    "compat",
 ]

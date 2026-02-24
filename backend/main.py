@@ -9,7 +9,8 @@ from backend.routes import (
     notification_channels,
     filter_rules,
     notification_logs,
-    config_settings
+    config_settings,
+    compat,
 )
 
 logger = logging.getLogger(__name__)
@@ -61,6 +62,7 @@ def api_health():
 
 
 # Register routes
+app.include_router(compat.router)  # /api/health, /api/config, /api/metrics, /api/rules
 app.include_router(gmail_accounts.router, prefix=settings.api_prefix)
 app.include_router(notification_channels.router, prefix=settings.api_prefix)
 app.include_router(filter_rules.router, prefix=settings.api_prefix)
