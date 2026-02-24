@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from backend.core.config import settings
@@ -11,8 +12,13 @@ from backend.routes import (
     config_settings
 )
 
-# สร้าง tables (ถ้ายังไม่มี)
-Base.metadata.create_all(bind=engine)
+logger = logging.getLogger(__name__)
+
+# สร้าง tables (ถ้ายังไม่มี) - ถ้าล้มยังให้ API ขึ้นก่อน
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as e:
+    logger.warning("Database init failed (tables may already exist or path issue): %s", e)
 
 # สร้าง FastAPI app
 app = FastAPI(
