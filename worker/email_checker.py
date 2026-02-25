@@ -45,10 +45,11 @@ class EmailChecker:
             logger.info(f"✅ Connected to {self.account.email}")
             return True
         except imaplib.IMAP4.error as e:
-            logger.error(f"❌ IMAP error for {self.account.email}: {e}")
+            logger.error(f"❌ IMAP error for {self.account.email}: {type(e).__name__}: {e}")
             return False
         except Exception as e:
-            logger.error(f"❌ Connection error for {self.account.email}: {e}")
+            err_msg = str(e) or repr(e) or type(e).__name__
+            logger.error(f"❌ Connection error for {self.account.email}: {type(e).__name__}: {err_msg}")
             return False
 
     def disconnect(self):

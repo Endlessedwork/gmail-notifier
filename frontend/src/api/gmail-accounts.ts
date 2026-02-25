@@ -13,6 +13,12 @@ export const gmailAccountsApi = {
   get: (id: number) =>
     apiClient.get<GmailAccount>(`/gmail-accounts/${id}`),
 
+  testConnection: (data: { email: string; password: string; imap_server?: string; imap_port?: number }) =>
+    apiClient.post<{ success: boolean; message: string }>('/gmail-accounts/test-connection', data),
+
+  testExistingConnection: (id: number) =>
+    apiClient.post<{ success: boolean; message: string }>(`/gmail-accounts/${id}/test-connection`),
+
   create: (data: GmailAccountCreate) =>
     apiClient.post<GmailAccount>('/gmail-accounts', data),
 

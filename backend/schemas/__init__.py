@@ -2,7 +2,8 @@ from backend.schemas.gmail_account import (
     GmailAccountCreate,
     GmailAccountUpdate,
     GmailAccountResponse,
-    GmailAccountList
+    GmailAccountList,
+    GmailAccountTestRequest,
 )
 from backend.schemas.notification_channel import (
     NotificationChannelCreate,
@@ -34,6 +35,7 @@ __all__ = [
     "GmailAccountUpdate",
     "GmailAccountResponse",
     "GmailAccountList",
+    "GmailAccountTestRequest",
     "NotificationChannelCreate",
     "NotificationChannelUpdate",
     "NotificationChannelResponse",

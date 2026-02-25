@@ -11,8 +11,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Wifi } from 'lucide-react'
 import { useCreateGmailAccount, useUpdateGmailAccount } from '@/hooks/useGmailAccounts'
+import { gmailAccountsApi } from '@/api'
+import { toast } from 'sonner'
 import type { GmailAccount } from '@/types'
 
 interface GmailDialogProps {
@@ -34,10 +36,45 @@ export function GmailDialog({
     enabled: true,
   })
 
+  const [testLoading, setTestLoading] = useState(false)
+
   const createAccount = useCreateGmailAccount()
   const updateAccount = useUpdateGmailAccount()
 
   const isLoading = createAccount.isPending || updateAccount.isPending
+
+  const handleTestConnection = async () => {
+    if (account) {
+      setTestLoading(true)
+      try {
+        await gmailAccountsApi.testExistingConnection(account.id)
+        toast.success('เชื่อมต่อสำเร็จ')
+      } catch (err: any) {
+        toast.error(err?.data?.detail || err?.message || 'เชื่อมต่อล้มเหลว')
+      } finally {
+        setTestLoading(false)
+      }
+    } else {
+      if (!formData.email || !formData.password) {
+        toast.error('กรอก Email และ App Password ก่อนทดสอบ')
+        return
+      }
+      setTestLoading(true)
+      try {
+        await gmailAccountsApi.testConnection({
+          email: formData.email,
+          password: formData.password,
+          imap_server: formData.imap_server,
+          imap_port: formData.imap_port,
+        })
+        toast.success('เชื่อมต่อสำเร็จ')
+      } catch (err: any) {
+        toast.error(err?.data?.detail || err?.message || 'เชื่อมต่อล้มเหลว')
+      } finally {
+        setTestLoading(false)
+      }
+    }
+  }
 
   useEffect(() => {
     if (account) {
@@ -161,6 +198,29 @@ export function GmailDialog({
                 required
               />
             </div>
+          </div>
+
+          {/* Test Connection */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <Label>ทดสอบการเชื่อมต่อ</Label>
+              <p className="text-xs text-muted-foreground">
+                {account
+                  ? 'ทดสอบด้วยข้อมูลที่บันทึกไว้'
+                  : 'กรอกข้อมูลด้านบนก่อน แล้วกดทดสอบ'}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleTestConnection}
+              disabled={testLoading || (!account && (!formData.email || !formData.password))}
+            >
+              {testLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              <Wifi className="w-4 h-4 mr-2" />
+              ทดสอบ
+            </Button>
           </div>
 
           {/* Enabled */}

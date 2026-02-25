@@ -1,14 +1,17 @@
 import { useState } from 'react'
-import { Mail, Plus, Edit, Trash2, Loader2 } from 'lucide-react'
+import { Mail, Plus, Edit, Trash2, Loader2, Wifi } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { GmailDialog } from './GmailDialog'
 import { useGmailAccounts, useDeleteGmailAccount } from '@/hooks/useGmailAccounts'
+import { gmailAccountsApi } from '@/api'
+import { toast } from 'sonner'
 import type { GmailAccount } from '@/types'
 
 export function GmailManagement() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<GmailAccount | undefined>()
+  const [testingId, setTestingId] = useState<number | null>(null)
 
   const { data, isLoading, error } = useGmailAccounts()
   const deleteAccount = useDeleteGmailAccount()
@@ -28,6 +31,18 @@ export function GmailManagement() {
   const handleDelete = (id: number, email: string) => {
     if (!confirm(`ต้องการลบบัญชี "${email}" หรือไม่?`)) return
     deleteAccount.mutate(id)
+  }
+
+  const handleTestConnection = async (account: GmailAccount) => {
+    setTestingId(account.id)
+    try {
+      await gmailAccountsApi.testExistingConnection(account.id)
+      toast.success(`เชื่อมต่อ ${account.email} สำเร็จ`)
+    } catch (err: any) {
+      toast.error(err?.data?.detail || err?.message || 'เชื่อมต่อล้มเหลว')
+    } finally {
+      setTestingId(null)
+    }
   }
 
   if (error) {
@@ -99,7 +114,21 @@ export function GmailManagement() {
                   </div>
                 )}
 
-                <div className="flex gap-2 mt-4 pt-4 border-t border-border">
+                <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => handleTestConnection(account)}
+                    disabled={testingId === account.id}
+                  >
+                    {testingId === account.id ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Wifi className="w-3 h-3" />
+                    )}
+                    ทดสอบ
+                  </Button>
                   <Button
                     size="sm"
                     variant="outline"

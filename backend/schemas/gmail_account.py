@@ -14,6 +14,14 @@ class GmailAccountCreate(GmailAccountBase):
     password: str = Field(..., min_length=1)
 
 
+class GmailAccountTestRequest(BaseModel):
+    """ใช้สำหรับ test connection (ไม่บันทึก)"""
+    email: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=1)
+    imap_server: str = "imap.gmail.com"
+    imap_port: int = Field(default=993, ge=1, le=65535)
+
+
 class GmailAccountUpdate(BaseModel):
     email: Optional[str] = Field(None, min_length=1)
     password: Optional[str] = Field(None, min_length=1)

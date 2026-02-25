@@ -1,3 +1,4 @@
+import imaplib
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from backend.core.database import get_db
@@ -6,7 +7,8 @@ from backend.schemas import (
     GmailAccountCreate,
     GmailAccountUpdate,
     GmailAccountResponse,
-    GmailAccountList
+    GmailAccountList,
+    GmailAccountTestRequest,
 )
 
 router = APIRouter(prefix="/gmail-accounts", tags=["Gmail Accounts"])
@@ -39,6 +41,43 @@ def get_gmail_account(
             detail=f"Gmail account {account_id} not found"
         )
     return account
+
+
+@router.post("/test-connection")
+def test_gmail_connection(data: GmailAccountTestRequest):
+    """ทดสอบการเชื่อมต่อ IMAP (ไม่บันทึกข้อมูล)"""
+    try:
+        mail = imaplib.IMAP4_SSL(data.imap_server, data.imap_port)
+        mail.login(data.email, data.password)
+        mail.logout()
+        return {"success": True, "message": "เชื่อมต่อสำเร็จ"}
+    except imaplib.IMAP4.error as e:
+        raise HTTPException(status_code=400, detail=f"IMAP error: {str(e)}")
+    except Exception as e:
+        err_msg = str(e) or repr(e) or type(e).__name__
+        raise HTTPException(status_code=400, detail=f"Connection error: {type(e).__name__}: {err_msg}")
+
+
+@router.post("/{account_id}/test-connection")
+def test_existing_gmail_connection(
+    account_id: int,
+    db: Session = Depends(get_db)
+):
+    """ทดสอบการเชื่อมต่อ IMAP ของ account ที่มีอยู่แล้ว"""
+    account = GmailAccountService.get_by_id(db, account_id)
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    try:
+        password = GmailAccountService.get_decrypted_password(account)
+        mail = imaplib.IMAP4_SSL(account.imap_server, account.imap_port)
+        mail.login(account.email, password)
+        mail.logout()
+        return {"success": True, "message": "เชื่อมต่อสำเร็จ"}
+    except imaplib.IMAP4.error as e:
+        raise HTTPException(status_code=400, detail=f"IMAP error: {str(e)}")
+    except Exception as e:
+        err_msg = str(e) or repr(e) or type(e).__name__
+        raise HTTPException(status_code=400, detail=f"Connection error: {type(e).__name__}: {err_msg}")
 
 
 @router.post("", response_model=GmailAccountResponse, status_code=status.HTTP_201_CREATED)
