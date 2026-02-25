@@ -149,11 +149,12 @@ class AuthService:
             return user
 
         # Create new user (set dummy hashed_password for OAuth users)
+        # Use a fixed dummy password for OAuth-only users (they won't use it anyway)
         user = User(
             username=username,
             email=email,
             google_id=google_id,
-            hashed_password=hash_password(""),  # OAuth users don't need password
+            hashed_password=hash_password("oauth_user_no_password"),
         )
 
         try:
