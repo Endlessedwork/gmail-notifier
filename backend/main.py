@@ -6,6 +6,7 @@ from backend.core.config import settings
 from backend.core.database import engine, Base
 from backend.middlewares import add_cors_middleware
 from backend.routes import (
+    auth,
     gmail_accounts,
     notification_channels,
     filter_rules,
@@ -70,6 +71,7 @@ def api_health():
 # Register routes
 logger.info("Registering routes...")
 app.include_router(compat.router)  # /api/health, /api/config, /api/metrics, /api/rules
+app.include_router(auth.router, prefix=settings.api_prefix)
 app.include_router(gmail_accounts.router, prefix=settings.api_prefix)
 app.include_router(notification_channels.router, prefix=settings.api_prefix)
 app.include_router(filter_rules.router, prefix=settings.api_prefix)

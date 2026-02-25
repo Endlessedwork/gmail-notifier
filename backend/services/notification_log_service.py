@@ -1,12 +1,22 @@
 from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime
-from backend.models import NotificationLog
+from backend.models import NotificationLog, GmailAccount
 from fastapi import HTTPException, status
 
 
 class NotificationLogService:
-    """Service layer สำหรับจัดการ Notification Logs"""
+    """Service layer for managing Notification Logs"""
+
+    @staticmethod
+    def _user_scoped_query(db: Session, user_id: Optional[int] = None):
+        """Build base query optionally scoped to user via gmail_accounts"""
+        query = db.query(NotificationLog)
+        if user_id is not None:
+            query = query.join(GmailAccount).filter(
+                GmailAccount.user_id == user_id
+            )
+        return query
 
     @staticmethod
     def get_all(
@@ -14,10 +24,11 @@ class NotificationLogService:
         skip: int = 0,
         limit: int = 100,
         account_id: Optional[int] = None,
-        status_filter: Optional[str] = None
+        status_filter: Optional[str] = None,
+        user_id: Optional[int] = None,
     ) -> tuple[list[NotificationLog], int]:
-        """ดึง logs ทั้งหมดพร้อม filter"""
-        query = db.query(NotificationLog)
+        """Get all logs with optional filters"""
+        query = NotificationLogService._user_scoped_query(db, user_id)
 
         if account_id:
             query = query.filter(NotificationLog.gmail_account_id == account_id)
@@ -26,13 +37,22 @@ class NotificationLogService:
             query = query.filter(NotificationLog.status == status_filter)
 
         total = query.count()
-        logs = query.order_by(NotificationLog.created_at.desc()).offset(skip).limit(limit).all()
+        logs = (
+            query.order_by(NotificationLog.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
         return logs, total
 
     @staticmethod
     def get_by_id(db: Session, log_id: int) -> Optional[NotificationLog]:
-        """ดึง log ตาม ID"""
-        return db.query(NotificationLog).filter(NotificationLog.id == log_id).first()
+        """Get log by ID"""
+        return (
+            db.query(NotificationLog)
+            .filter(NotificationLog.id == log_id)
+            .first()
+        )
 
     @staticmethod
     def create(
@@ -43,9 +63,9 @@ class NotificationLogService:
         email_from: str,
         email_date: str,
         filter_rule_id: Optional[int] = None,
-        status: str = "pending"
+        status: str = "pending",
     ) -> NotificationLog:
-        """สร้าง notification log"""
+        """Create notification log"""
         log = NotificationLog(
             gmail_account_id=gmail_account_id,
             filter_rule_id=filter_rule_id,
@@ -53,7 +73,7 @@ class NotificationLogService:
             email_subject=email_subject,
             email_from=email_from,
             email_date=email_date,
-            status=status
+            status=status,
         )
 
         db.add(log)
@@ -66,9 +86,9 @@ class NotificationLogService:
         db: Session,
         log_id: int,
         status: str,
-        error_message: Optional[str] = None
+        error_message: Optional[str] = None,
     ) -> Optional[NotificationLog]:
-        """อัพเดทสถานะของ log"""
+        """Update log status"""
         log = NotificationLogService.get_by_id(db, log_id)
         if not log:
             return None
@@ -84,9 +104,13 @@ class NotificationLogService:
         return log
 
     @staticmethod
-    def get_stats(db: Session, account_id: Optional[int] = None) -> dict:
-        """ดึงสถิติการส่ง notification"""
-        query = db.query(NotificationLog)
+    def get_stats(
+        db: Session,
+        account_id: Optional[int] = None,
+        user_id: Optional[int] = None,
+    ) -> dict:
+        """Get notification stats"""
+        query = NotificationLogService._user_scoped_query(db, user_id)
 
         if account_id:
             query = query.filter(NotificationLog.gmail_account_id == account_id)
@@ -101,5 +125,5 @@ class NotificationLogService:
             "sent": sent,
             "failed": failed,
             "pending": pending,
-            "success_rate": round((sent / total * 100) if total > 0 else 0, 2)
+            "success_rate": round((sent / total * 100) if total > 0 else 0, 2),
         }

@@ -1,3 +1,10 @@
+from backend.schemas.auth import (
+    UserCreate,
+    UserLogin,
+    UserResponse,
+    TokenResponse,
+    RefreshTokenRequest,
+)
 from backend.schemas.gmail_account import (
     GmailAccountCreate,
     GmailAccountUpdate,
@@ -31,6 +38,11 @@ from backend.schemas.config_setting import (
 )
 
 __all__ = [
+    "UserCreate",
+    "UserLogin",
+    "UserResponse",
+    "TokenResponse",
+    "RefreshTokenRequest",
     "GmailAccountCreate",
     "GmailAccountUpdate",
     "GmailAccountResponse",

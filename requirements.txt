@@ -15,6 +15,10 @@ sqlalchemy==2.0.23
 cryptography==41.0.7
 python-dotenv==1.0.0
 
+# Authentication
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
 # Utilities
 python-multipart==0.0.6
 watchdog==3.0.0

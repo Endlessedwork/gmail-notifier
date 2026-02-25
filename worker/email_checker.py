@@ -9,8 +9,9 @@ from datetime import datetime
 import logging
 
 from worker.utils import decode_mime_header, get_email_body
-from backend.models import GmailAccount
+from backend.models import GmailAccount, NotificationLog
 from backend.core.security import decrypt_password
+from backend.core.database import get_db_context
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +67,9 @@ class EmailChecker:
         """
         ตรวจสอบอีเมลใหม่ที่ยังไม่ได้อ่าน
 
+        ถ้า account มี last_checked_at แล้ว จะดึงเฉพาะอีเมลที่มาหลังจากเวลานั้น
+        ถ้ายังไม่เคย check (ครั้งแรก) จะดึงเฉพาะอีเมลวันนี้เท่านั้น
+
         Returns:
             List of email dictionaries
         """
@@ -75,7 +79,20 @@ class EmailChecker:
 
         try:
             self.mail.select('INBOX')
-            status, messages = self.mail.search(None, 'UNSEEN')
+
+            # สร้าง search criteria
+            if self.account.last_checked_at:
+                # มี last_checked_at แล้ว: ดึงเฉพาะอีเมลหลังจากเวลานั้น
+                check_date = self.account.last_checked_at.strftime('%d-%b-%Y')
+                search_criteria = f'(UNSEEN SINCE {check_date})'
+                logger.debug(f"Searching emails SINCE {check_date}")
+            else:
+                # ครั้งแรก: ดึงเฉพาะอีเมลวันนี้เท่านั้น
+                today = datetime.now().strftime('%d-%b-%Y')
+                search_criteria = f'(UNSEEN SINCE {today})'
+                logger.info(f"First check - searching emails from today ({today}) only")
+
+            status, messages = self.mail.search(None, search_criteria)
 
             if status != 'OK':
                 logger.error(f"Failed to search emails for {self.account.email}")
@@ -93,12 +110,15 @@ class EmailChecker:
             for email_id in email_ids:
                 try:
                     email_data = self._fetch_email(email_id)
-                    if email_data:
+                    if email_data and not self._is_already_processed(email_data):
                         emails.append(email_data)
+                    elif email_data:
+                        logger.debug(f"Skipping already processed email: {email_data['subject'][:50]}")
                 except Exception as e:
                     logger.error(f"Error processing email {email_id}: {e}")
                     continue
 
+            logger.info(f"📧 {len(emails)} new unique email(s) (filtered from {len(email_ids)} UNSEEN)")
             return emails
 
         except Exception as e:
@@ -140,6 +160,31 @@ class EmailChecker:
         except Exception as e:
             logger.error(f"Failed to fetch email {email_id}: {e}")
             return None
+
+    def _is_already_processed(self, email_data: Dict) -> bool:
+        """
+        เช็คว่าอีเมลนี้เคยถูกประมวลผล (log ไว้) แล้วหรือยัง
+
+        Args:
+            email_data: Email data dictionary
+
+        Returns:
+            True ถ้าเคยประมวลผลแล้ว
+        """
+        try:
+            with get_db_context() as db:
+                # เช็คว่ามี log ของอีเมลนี้หรือยัง (เช็คจาก subject + sender + account_id)
+                exists = db.query(NotificationLog).filter(
+                    NotificationLog.gmail_account_id == email_data['account_id'],
+                    NotificationLog.email_subject == email_data['subject'],
+                    NotificationLog.email_from == email_data['from']
+                ).first() is not None
+
+                return exists
+        except Exception as e:
+            logger.error(f"Error checking if email already processed: {e}")
+            # ถ้า error ให้ถือว่ายังไม่เคยประมวลผล (ดึงมาดีกว่าพลาด)
+            return False
 
     def mark_as_seen(self, email_id: bytes):
         """

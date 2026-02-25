@@ -7,23 +7,43 @@ from fastapi import HTTPException, status
 
 
 class FilterRuleService:
-    """Service layer สำหรับจัดการ Filter Rules"""
+    """Service layer for managing Filter Rules"""
 
     @staticmethod
-    def get_all(db: Session, skip: int = 0, limit: int = 100) -> tuple[list[FilterRule], int]:
-        """ดึง rules ทั้งหมด"""
-        total = db.query(FilterRule).count()
-        rules = db.query(FilterRule).order_by(FilterRule.priority.asc()).offset(skip).limit(limit).all()
+    def get_all(
+        db: Session,
+        skip: int = 0,
+        limit: int = 100,
+        user_id: Optional[int] = None,
+    ) -> tuple[list[FilterRule], int]:
+        """Get all rules, optionally filtered by user_id"""
+        query = db.query(FilterRule)
+        if user_id is not None:
+            query = query.filter(FilterRule.user_id == user_id)
+        total = query.count()
+        rules = (
+            query.order_by(FilterRule.priority.asc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
         return rules, total
 
     @staticmethod
-    def get_by_id(db: Session, rule_id: int) -> Optional[FilterRule]:
-        """ดึง rule ตาม ID"""
-        return db.query(FilterRule).filter(FilterRule.id == rule_id).first()
+    def get_by_id(
+        db: Session,
+        rule_id: int,
+        user_id: Optional[int] = None,
+    ) -> Optional[FilterRule]:
+        """Get rule by ID, optionally scoped to user"""
+        query = db.query(FilterRule).filter(FilterRule.id == rule_id)
+        if user_id is not None:
+            query = query.filter(FilterRule.user_id == user_id)
+        return query.first()
 
     @staticmethod
     def get_by_account(db: Session, account_id: int) -> list[FilterRule]:
-        """ดึง rules ตาม Gmail account"""
+        """Get enabled rules by Gmail account (used by worker)"""
         return (
             db.query(FilterRule)
             .filter(FilterRule.gmail_account_id == account_id)
@@ -33,52 +53,64 @@ class FilterRuleService:
         )
 
     @staticmethod
-    def create(db: Session, rule_data: FilterRuleCreate) -> FilterRule:
-        """สร้าง filter rule ใหม่"""
-        # ตรวจสอบว่า gmail_account และ channel มีอยู่จริง
+    def create(
+        db: Session,
+        rule_data: FilterRuleCreate,
+        user_id: Optional[int] = None,
+    ) -> FilterRule:
+        """Create a new filter rule"""
         from backend.services.gmail_account_service import GmailAccountService
-        from backend.services.notification_channel_service import NotificationChannelService
+        from backend.services.notification_channel_service import (
+            NotificationChannelService,
+        )
 
-        account = GmailAccountService.get_by_id(db, rule_data.gmail_account_id)
+        account = GmailAccountService.get_by_id(
+            db, rule_data.gmail_account_id, user_id
+        )
         if not account:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Gmail account {rule_data.gmail_account_id} not found"
+                detail=f"Gmail account {rule_data.gmail_account_id} not found",
             )
 
-        channel = NotificationChannelService.get_by_id(db, rule_data.channel_id)
+        channel = NotificationChannelService.get_by_id(
+            db, rule_data.channel_id, user_id
+        )
         if not channel:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Notification channel {rule_data.channel_id} not found"
+                detail=f"Notification channel {rule_data.channel_id} not found",
             )
 
-        # ตรวจสอบ regex pattern ถ้าใช้ match_type = regex
         if rule_data.match_type == "regex":
             try:
                 re.compile(rule_data.match_value)
             except re.error as e:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid regex pattern: {str(e)}"
+                    detail=f"Invalid regex pattern: {str(e)}",
                 )
 
-        rule = FilterRule(**rule_data.model_dump())
+        rule = FilterRule(**rule_data.model_dump(), user_id=user_id)
         db.add(rule)
         db.commit()
         db.refresh(rule)
         return rule
 
     @staticmethod
-    def update(db: Session, rule_id: int, rule_data: FilterRuleUpdate) -> Optional[FilterRule]:
-        """อัพเดท filter rule"""
-        rule = FilterRuleService.get_by_id(db, rule_id)
+    def update(
+        db: Session,
+        rule_id: int,
+        rule_data: FilterRuleUpdate,
+        user_id: Optional[int] = None,
+    ) -> Optional[FilterRule]:
+        """Update a filter rule"""
+        rule = FilterRuleService.get_by_id(db, rule_id, user_id)
         if not rule:
             return None
 
         update_data = rule_data.model_dump(exclude_unset=True)
 
-        # ตรวจสอบ regex pattern ถ้ามีการเปลี่ยน
         if "match_type" in update_data or "match_value" in update_data:
             match_type = update_data.get("match_type", rule.match_type)
             match_value = update_data.get("match_value", rule.match_value)
@@ -89,17 +121,21 @@ class FilterRuleService:
                 except re.error as e:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Invalid regex pattern: {str(e)}"
+                        detail=f"Invalid regex pattern: {str(e)}",
                     )
 
-        # ตรวจสอบ channel ถ้ามีการเปลี่ยน
         if "channel_id" in update_data:
-            from backend.services.notification_channel_service import NotificationChannelService
-            channel = NotificationChannelService.get_by_id(db, update_data["channel_id"])
+            from backend.services.notification_channel_service import (
+                NotificationChannelService,
+            )
+
+            channel = NotificationChannelService.get_by_id(
+                db, update_data["channel_id"], user_id
+            )
             if not channel:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Notification channel {update_data['channel_id']} not found"
+                    detail=f"Notification channel {update_data['channel_id']} not found",
                 )
 
         for field, value in update_data.items():
@@ -110,9 +146,13 @@ class FilterRuleService:
         return rule
 
     @staticmethod
-    def delete(db: Session, rule_id: int) -> bool:
-        """ลบ filter rule"""
-        rule = FilterRuleService.get_by_id(db, rule_id)
+    def delete(
+        db: Session,
+        rule_id: int,
+        user_id: Optional[int] = None,
+    ) -> bool:
+        """Delete a filter rule"""
+        rule = FilterRuleService.get_by_id(db, rule_id, user_id)
         if not rule:
             return False
 
@@ -122,7 +162,7 @@ class FilterRuleService:
 
     @staticmethod
     def match_email(rule: FilterRule, email_data: dict) -> bool:
-        """ตรวจสอบว่า email ตรงกับ rule หรือไม่"""
+        """Check if email matches this rule"""
         field_value = ""
         if rule.field == "from":
             field_value = email_data.get("from", "")
@@ -144,8 +184,10 @@ class FilterRuleService:
         return False
 
     @staticmethod
-    def find_matching_rule(db: Session, account_id: int, email_data: dict) -> Optional[FilterRule]:
-        """หา rule ที่ match กับ email (เรียงตาม priority)"""
+    def find_matching_rule(
+        db: Session, account_id: int, email_data: dict
+    ) -> Optional[FilterRule]:
+        """Find matching rule for email (ordered by priority)"""
         rules = FilterRuleService.get_by_account(db, account_id)
 
         for rule in rules:

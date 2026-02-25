@@ -12,18 +12,40 @@ export class APIError extends Error {
   }
 }
 
+const AUTH_TOKEN_KEY = 'access_token'
+
+export function getStoredToken(): string | null {
+  return localStorage.getItem(AUTH_TOKEN_KEY)
+}
+
+export function setStoredToken(token: string): void {
+  localStorage.setItem(AUTH_TOKEN_KEY, token)
+}
+
+export function removeStoredToken(): void {
+  localStorage.removeItem(AUTH_TOKEN_KEY)
+  localStorage.removeItem('refresh_token')
+}
+
 async function fetchAPI<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
   const url = `${API_BASE}${endpoint}`
+  const token = getStoredToken()
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options?.headers as Record<string, string>),
+  }
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
 
   const response = await fetch(url, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
+    headers,
   })
 
   if (!response.ok) {

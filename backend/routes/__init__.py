@@ -1,4 +1,5 @@
 from backend.routes import (
+    auth,
     gmail_accounts,
     notification_channels,
     filter_rules,
@@ -8,6 +9,7 @@ from backend.routes import (
 )
 
 __all__ = [
+    "auth",
     "gmail_accounts",
     "notification_channels",
     "filter_rules",

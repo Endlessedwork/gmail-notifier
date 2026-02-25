@@ -20,9 +20,13 @@ const navigation = [
   { name: 'Settings', href: '/settings', icon: SettingsIcon },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  onNavigate?: () => void
+}
+
+export function Sidebar({ onNavigate }: SidebarProps) {
   return (
-    <aside className="w-64 bg-card border-r border-border flex flex-col">
+    <aside className="w-64 bg-card border-r border-border flex flex-col h-full">
       {/* Logo */}
       <div className="p-6 border-b border-border">
         <div className="flex items-center gap-3">
@@ -37,12 +41,13 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {navigation.map((item) => (
           <NavLink
             key={item.name}
             to={item.href}
             end={item.href === '/'}
+            onClick={onNavigate}
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',

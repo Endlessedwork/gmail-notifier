@@ -8,6 +8,7 @@ class FilterRule(Base):
     __tablename__ = "filter_rules"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
     gmail_account_id = Column(Integer, ForeignKey("gmail_accounts.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, nullable=False)
     field = Column(String, nullable=False)  # from, subject, body
@@ -20,6 +21,7 @@ class FilterRule(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
+    user = relationship("User", back_populates="filter_rules")
     gmail_account = relationship("GmailAccount", back_populates="filter_rules")
     channel = relationship("NotificationChannel", back_populates="filter_rules")
     notification_logs = relationship("NotificationLog", back_populates="filter_rule")

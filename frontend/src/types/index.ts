@@ -1,3 +1,34 @@
+// Auth Types
+export interface AuthUser {
+  id: number
+  username: string
+  email: string
+  is_active: boolean
+  is_admin: boolean
+  created_at: string
+  updated_at: string
+}
+
+// Alias for convenience
+export type User = AuthUser
+
+export interface LoginRequest {
+  username: string
+  password: string
+}
+
+export interface RegisterRequest {
+  username: string
+  email: string
+  password: string
+}
+
+export interface TokenResponse {
+  access_token: string
+  token_type: string
+  user: AuthUser
+}
+
 // Gmail Account Types
 export interface GmailAccount {
   id: number

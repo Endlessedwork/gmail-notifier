@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from backend.core.database import Base
@@ -8,6 +8,7 @@ class GmailAccount(Base):
     __tablename__ = "gmail_accounts"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
     email = Column(String, unique=True, nullable=False, index=True)
     password = Column(String, nullable=False)  # Encrypted
     imap_server = Column(String, default="imap.gmail.com")
@@ -18,5 +19,6 @@ class GmailAccount(Base):
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
+    user = relationship("User", back_populates="gmail_accounts")
     filter_rules = relationship("FilterRule", back_populates="gmail_account", cascade="all, delete-orphan")
     notification_logs = relationship("NotificationLog", back_populates="gmail_account", cascade="all, delete-orphan")
