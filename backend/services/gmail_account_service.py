@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from typing import Optional
+from typing import List, Optional, Tuple
 from backend.models import GmailAccount
 from backend.schemas import GmailAccountCreate, GmailAccountUpdate
 from backend.core.security import encrypt_password, decrypt_password
@@ -16,7 +16,7 @@ class GmailAccountService:
         skip: int = 0,
         limit: int = 100,
         user_id: Optional[int] = None,
-    ) -> tuple[list[GmailAccount], int]:
+    ) -> Tuple[List[GmailAccount], int]:
         """Get all Gmail accounts, optionally filtered by user_id"""
         query = db.query(GmailAccount)
         if user_id is not None:
@@ -43,7 +43,7 @@ class GmailAccountService:
         return db.query(GmailAccount).filter(GmailAccount.email == email).first()
 
     @staticmethod
-    def get_enabled_accounts(db: Session) -> list[GmailAccount]:
+    def get_enabled_accounts(db: Session) -> List[GmailAccount]:
         """Get all enabled accounts (used by worker, no user scope)"""
         return db.query(GmailAccount).filter(GmailAccount.enabled == True).all()
 

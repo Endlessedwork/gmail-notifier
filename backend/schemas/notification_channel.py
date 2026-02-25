@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Optional, Literal
+from typing import Dict, List, Optional, Literal, Union
 
 
 class NotificationChannelBase(BaseModel):
@@ -20,17 +20,17 @@ class LineConfig(BaseModel):
 
 class WebhookConfig(BaseModel):
     url: str = Field(..., min_length=1)
-    headers: Optional[dict[str, str]] = None
+    headers: Optional[Dict[str, str]] = None
 
 
 class NotificationChannelCreate(NotificationChannelBase):
-    config: TelegramConfig | LineConfig | WebhookConfig
+    config: Union[TelegramConfig, LineConfig, WebhookConfig]
 
 
 class NotificationChannelUpdate(BaseModel):
     type: Optional[Literal["telegram", "line", "webhook"]] = None
     name: Optional[str] = Field(None, min_length=1, max_length=255)
-    config: Optional[TelegramConfig | LineConfig | WebhookConfig] = None
+    config: Optional[Union[TelegramConfig, LineConfig, WebhookConfig]] = None
     enabled: Optional[bool] = None
 
 
@@ -49,4 +49,4 @@ class NotificationChannelResponse(BaseModel):
 
 class NotificationChannelList(BaseModel):
     total: int
-    channels: list[NotificationChannelResponse]
+    channels: List[NotificationChannelResponse]

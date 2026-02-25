@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Optional, Literal
+from typing import List, Optional, Literal
 
 
 class FilterRuleBase(BaseModel):
@@ -39,4 +39,4 @@ class FilterRuleResponse(FilterRuleBase):
 
 class FilterRuleList(BaseModel):
     total: int
-    rules: list[FilterRuleResponse]
+    rules: List[FilterRuleResponse]

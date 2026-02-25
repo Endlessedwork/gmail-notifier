@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import List
 from datetime import datetime
 
 
@@ -17,4 +18,4 @@ class ConfigSettingUpdate(BaseModel):
 
 class ConfigSettingList(BaseModel):
     total: int
-    settings: list[ConfigSettingResponse]
+    settings: List[ConfigSettingResponse]

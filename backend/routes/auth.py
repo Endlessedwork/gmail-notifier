@@ -96,7 +96,7 @@ def google_login():
     return RedirectResponse(url=auth_url)
 
 
-@router.get("/google/callback", response_model=TokenResponse)
+@router.get("/google/callback")
 async def google_callback(code: str, db: Session = Depends(get_db)):
     """Handle Google OAuth callback and create/login user"""
     try:
@@ -171,12 +171,14 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
         # Create tokens
         token_data = AuthService.create_tokens(db, user)
 
-        return TokenResponse(
-            access_token=token_data["access_token"],
-            refresh_token=token_data["refresh_token"],
-            token_type=token_data["token_type"],
-            user=UserResponse.model_validate(user),
-        )
+        # Redirect ไป frontend พร้อม tokens ใน hash (ไม่ส่งไปที่ server)
+        frontend_url = getattr(settings, "frontend_url", "http://localhost:3000").rstrip("/")
+        params = urlencode({
+            "access_token": token_data["access_token"],
+            "refresh_token": token_data["refresh_token"],
+        })
+        redirect_url = f"{frontend_url}/auth/callback#{params}"
+        return RedirectResponse(url=redirect_url, status_code=302)
     except HTTPException:
         raise
     except Exception as e:

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional, Literal
+from typing import List, Optional, Literal
 
 
 class NotificationLogResponse(BaseModel):
@@ -22,4 +22,4 @@ class NotificationLogResponse(BaseModel):
 
 class NotificationLogList(BaseModel):
     total: int
-    logs: list[NotificationLogResponse]
+    logs: List[NotificationLogResponse]

@@ -10,24 +10,11 @@ from sqlalchemy.orm import Session
 from backend.core.config import settings
 from backend.core.database import get_db
 
-BCRYPT_MAX_PASSWORD_BYTES = 72
-
-
-def _truncate_for_bcrypt(s: str) -> str:
-    """Truncate string to 72 bytes for bcrypt (raises ValueError if longer)."""
-    if not s:
-        return s
-    encoded = s.encode("utf-8")
-    if len(encoded) <= BCRYPT_MAX_PASSWORD_BYTES:
-        return s
-    return encoded[:BCRYPT_MAX_PASSWORD_BYTES].decode("utf-8", errors="ignore") or s[:1]
-
-
+# ใช้ bcrypt_sha256 แทน bcrypt - hash ด้วย SHA256 ก่อน (32 bytes) จึงไม่โดน limit 72 bytes
 pwd_context = CryptContext(
-    schemes=["bcrypt"],
+    schemes=["bcrypt_sha256"],
     deprecated="auto",
-    bcrypt__default_rounds=12,
-    bcrypt__truncate_error=False,
+    bcrypt_sha256__default_rounds=12,
 )
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.api_prefix}/auth/login")
 
@@ -37,13 +24,11 @@ REFRESH_TOKEN_EXPIRE_DAYS = 7  # 7 days
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    plain_password = _truncate_for_bcrypt(plain_password or "")
-    return pwd_context.verify(plain_password, hashed_password)
+    return pwd_context.verify(plain_password or "", hashed_password)
 
 
 def hash_password(password: str) -> str:
-    password = _truncate_for_bcrypt(password or "")
-    return pwd_context.hash(password)
+    return pwd_context.hash(password or "")
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

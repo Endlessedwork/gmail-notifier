@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import List, Optional
 from backend.models import ConfigSetting
 
 
@@ -7,7 +7,7 @@ class ConfigSettingService:
     """Service layer สำหรับจัดการ Config Settings"""
 
     @staticmethod
-    def get_all(db: Session) -> list[ConfigSetting]:
+    def get_all(db: Session) -> List[ConfigSetting]:
         """ดึง settings ทั้งหมด"""
         return db.query(ConfigSetting).all()
 

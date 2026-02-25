@@ -1,11 +1,11 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
+from typing import List, Optional
 import os
 import secrets
 import warnings
 
 
-def _get_allowed_origins() -> list[str]:
+def _get_allowed_origins() -> List[str]:
     raw = os.environ.get("ALLOWED_ORIGINS", "").strip()
     if raw == "*":
         return ["*"]
@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     # CORS (ตั้ง ALLOWED_ORIGINS ใน env เป็น * หรือรายการ origin คั่นด้วย comma)
     @property
-    def allowed_origins(self) -> list[str]:
+    def allowed_origins(self) -> List[str]:
         return _get_allowed_origins()
 
     # Security
@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     google_client_id: Optional[str] = None
     google_client_secret: Optional[str] = None
     google_redirect_uri: str = "http://localhost:8000/api/v1/auth/google/callback"
+    frontend_url: str = "http://localhost:3000"  # URL สำหรับ redirect หลัง login สำเร็จ
 
     # Database
     database_url: str = "sqlite:///./data/gmail_notifier.db"

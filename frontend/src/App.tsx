@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
+import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { Layout } from './components/layout/Layout'
 import { Dashboard } from './components/dashboard/Dashboard'
 import { GmailManagement } from './components/gmail/GmailManagement'
@@ -32,6 +33,7 @@ function AppContent() {
         {/* Public routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
         {/* Protected routes */}
         <Route

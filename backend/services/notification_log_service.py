@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import List, Optional, Tuple
 from datetime import datetime
 from backend.models import NotificationLog, GmailAccount
 from fastapi import HTTPException, status
@@ -26,7 +26,7 @@ class NotificationLogService:
         account_id: Optional[int] = None,
         status_filter: Optional[str] = None,
         user_id: Optional[int] = None,
-    ) -> tuple[list[NotificationLog], int]:
+    ) -> Tuple[List[NotificationLog], int]:
         """Get all logs with optional filters"""
         query = NotificationLogService._user_scoped_query(db, user_id)
 

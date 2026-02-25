@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 
 class GmailAccountBase(BaseModel):
@@ -42,4 +42,4 @@ class GmailAccountResponse(GmailAccountBase):
 
 class GmailAccountList(BaseModel):
     total: int
-    accounts: list[GmailAccountResponse]
+    accounts: List[GmailAccountResponse]

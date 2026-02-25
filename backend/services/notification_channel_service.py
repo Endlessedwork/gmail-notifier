@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from typing import Optional
+from typing import List, Optional, Tuple
 import json
 from backend.models import NotificationChannel
 from backend.schemas import NotificationChannelCreate, NotificationChannelUpdate
@@ -16,7 +16,7 @@ class NotificationChannelService:
         skip: int = 0,
         limit: int = 100,
         user_id: Optional[int] = None,
-    ) -> tuple[list[NotificationChannel], int]:
+    ) -> Tuple[List[NotificationChannel], int]:
         """Get all channels, optionally filtered by user_id"""
         query = db.query(NotificationChannel)
         if user_id is not None:
@@ -49,7 +49,7 @@ class NotificationChannelService:
         )
 
     @staticmethod
-    def get_enabled_channels(db: Session) -> list[NotificationChannel]:
+    def get_enabled_channels(db: Session) -> List[NotificationChannel]:
         """Get all enabled channels (used by worker, no user scope)"""
         return (
             db.query(NotificationChannel)

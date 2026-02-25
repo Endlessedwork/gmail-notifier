@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import List, Optional, Tuple
 import re
 from backend.models import FilterRule
 from backend.schemas import FilterRuleCreate, FilterRuleUpdate
@@ -15,7 +15,7 @@ class FilterRuleService:
         skip: int = 0,
         limit: int = 100,
         user_id: Optional[int] = None,
-    ) -> tuple[list[FilterRule], int]:
+    ) -> Tuple[List[FilterRule], int]:
         """Get all rules, optionally filtered by user_id"""
         query = db.query(FilterRule)
         if user_id is not None:
@@ -42,7 +42,7 @@ class FilterRuleService:
         return query.first()
 
     @staticmethod
-    def get_by_account(db: Session, account_id: int) -> list[FilterRule]:
+    def get_by_account(db: Session, account_id: int) -> List[FilterRule]:
         """Get enabled rules by Gmail account (used by worker)"""
         return (
             db.query(FilterRule)
