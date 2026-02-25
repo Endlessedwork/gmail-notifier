@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import HTTPException, RequestValidationError
 from fastapi.responses import JSONResponse
 from backend.core.config import settings
-from backend.core.database import engine, Base
+from backend.core.database import engine, Base, run_migrations
 from backend.middlewares import add_cors_middleware
 from backend.routes import (
     auth,
@@ -21,6 +21,12 @@ logger = logging.getLogger(__name__)
 # บังคับ log ไป stdout เพื่อให้เห็นใน Easypanel Logs
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, force=True)
 logger.info("Backend module loading...")
+
+# รัน migrations ก่อน (เพิ่ม user_id ฯลฯ ถ้าตารางเก่า)
+try:
+    run_migrations()
+except Exception as e:
+    logger.warning("Migration skipped: %s", e)
 
 # สร้าง tables (ถ้ายังไม่มี) - ถ้าล้มยังให้ API ขึ้นก่อน
 try:
