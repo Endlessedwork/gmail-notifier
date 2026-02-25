@@ -36,11 +36,12 @@ function App() {
       </BrowserRouter>
       <Toaster
         position="top-right"
+        theme="dark"
+        richColors
         toastOptions={{
-          style: {
-            background: 'hsl(var(--card))',
-            color: 'hsl(var(--card-foreground))',
-            border: '1px solid hsl(var(--border))',
+          classNames: {
+            success: '!bg-emerald-600 !text-white !border-emerald-500',
+            error: '!bg-rose-600 !text-white !border-rose-500',
           },
         }}
       />
