@@ -22,7 +22,7 @@ export function ActiveFilters() {
       <div className="p-6 border-b border-white/10">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-mono font-semibold flex items-center gap-2">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
               <Filter className="w-5 h-5 text-cyan-400" />
               Active Filter Rules
             </h2>
