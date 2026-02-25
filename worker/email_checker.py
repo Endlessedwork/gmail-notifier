@@ -10,6 +10,7 @@ import logging
 
 from worker.utils import decode_mime_header, get_email_body
 from backend.models import GmailAccount
+from backend.core.security import decrypt_password
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +36,12 @@ class EmailChecker:
             True ถ้าเชื่อมต่อสำเร็จ
         """
         try:
+            password = decrypt_password(self.account.password)
             self.mail = imaplib.IMAP4_SSL(
                 self.account.imap_server,
                 self.account.imap_port
             )
-            self.mail.login(self.account.email, self.account.password)
+            self.mail.login(self.account.email, password)
             logger.info(f"✅ Connected to {self.account.email}")
             return True
         except imaplib.IMAP4.error as e:

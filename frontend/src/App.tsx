@@ -6,6 +6,7 @@ import { Dashboard } from './components/dashboard/Dashboard'
 import { GmailManagement } from './components/gmail/GmailManagement'
 import { ChannelManagement } from './components/channels/ChannelManagement'
 import { FilterManagement } from './components/filters/FilterManagement'
+import { LogsPage } from './components/activity/LogsPage'
 import { Settings } from './components/settings/Settings'
 
 const queryClient = new QueryClient({
@@ -27,6 +28,7 @@ function App() {
             <Route path="gmail" element={<GmailManagement />} />
             <Route path="channels" element={<ChannelManagement />} />
             <Route path="filters" element={<FilterManagement />} />
+            <Route path="logs" element={<LogsPage />} />
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
