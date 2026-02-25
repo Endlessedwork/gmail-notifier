@@ -10,8 +10,7 @@
     <script>
       (function() {
         const stored = localStorage.getItem('gmail-notifier-theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const isDark = stored === 'light' ? false : stored === 'dark' ? true : prefersDark;
+        const isDark = stored === 'dark';
         document.documentElement.classList.toggle('dark', isDark);
       })();
     </script>

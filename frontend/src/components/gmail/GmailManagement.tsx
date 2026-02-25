@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Mail, Plus, Edit, Trash2, Loader2, Wifi } from 'lucide-react'
+import { Mail, Plus, Edit, Trash2, Loader2, RefreshCw } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Badge } from '../ui/badge'
 import { GmailDialog } from './GmailDialog'
+import { useQueryClient } from '@tanstack/react-query'
 import { useGmailAccounts, useDeleteGmailAccount } from '@/hooks/useGmailAccounts'
 import { gmailAccountsApi } from '@/api'
 import { toast } from 'sonner'
@@ -11,8 +12,9 @@ import type { GmailAccount } from '@/types'
 export function GmailManagement() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingAccount, setEditingAccount] = useState<GmailAccount | undefined>()
-  const [testingId, setTestingId] = useState<number | null>(null)
+  const [checkingId, setCheckingId] = useState<number | null>(null)
 
+  const queryClient = useQueryClient()
   const { data, isLoading, error } = useGmailAccounts()
   const deleteAccount = useDeleteGmailAccount()
 
@@ -33,15 +35,16 @@ export function GmailManagement() {
     deleteAccount.mutate(id)
   }
 
-  const handleTestConnection = async (account: GmailAccount) => {
-    setTestingId(account.id)
+  const handleCheckNow = async (account: GmailAccount) => {
+    setCheckingId(account.id)
     try {
-      await gmailAccountsApi.testExistingConnection(account.id)
-      toast.success(`เชื่อมต่อ ${account.email} สำเร็จ`)
+      await gmailAccountsApi.checkNow(account.id)
+      toast.success(`ดึงอีเมล ${account.email} เรียบร้อย`)
+      queryClient.invalidateQueries({ queryKey: ['gmail-accounts'] })
     } catch (err: any) {
-      toast.error(err?.data?.detail || err?.message || 'เชื่อมต่อล้มเหลว')
+      toast.error(err?.data?.detail || err?.message || 'ดึงอีเมลล้มเหลว')
     } finally {
-      setTestingId(null)
+      setCheckingId(null)
     }
   }
 
@@ -114,43 +117,43 @@ export function GmailManagement() {
                   </div>
                 )}
 
-                <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
+                <div className="flex items-center justify-end gap-1 mt-4 pt-4 border-t border-border">
                   <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-2"
-                    onClick={() => handleTestConnection(account)}
-                    disabled={testingId === account.id}
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={() => handleCheckNow(account)}
+                    disabled={checkingId === account.id}
+                    title="ดึงอีเมลทันที"
                   >
-                    {testingId === account.id ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
+                    {checkingId === account.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      <Wifi className="w-3 h-3" />
+                      <RefreshCw className="w-4 h-4" />
                     )}
-                    ทดสอบ
                   </Button>
                   <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 gap-2"
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
                     onClick={() => handleEdit(account)}
+                    title="แก้ไข"
                   >
-                    <Edit className="w-3 h-3" />
-                    แก้ไข
+                    <Edit className="w-4 h-4" />
                   </Button>
                   <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-2 text-destructive hover:text-destructive"
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
                     onClick={() => handleDelete(account.id, account.email)}
                     disabled={deleteAccount.isPending}
+                    title="ลบ"
                   >
                     {deleteAccount.isPending ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-4 h-4" />
                     )}
-                    ลบ
                   </Button>
                 </div>
               </div>

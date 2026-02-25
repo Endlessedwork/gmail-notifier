@@ -19,6 +19,9 @@ export const gmailAccountsApi = {
   testExistingConnection: (id: number) =>
     apiClient.post<{ success: boolean; message: string }>(`/gmail-accounts/${id}/test-connection`),
 
+  checkNow: (id: number) =>
+    apiClient.post<{ success: boolean; message: string }>(`/gmail-accounts/${id}/check-now`),
+
   create: (data: GmailAccountCreate) =>
     apiClient.post<GmailAccount>('/gmail-accounts', data),
 
