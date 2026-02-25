@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'sonner'
+import { ThemeProvider, useTheme } from './components/theme/ThemeProvider'
 import { Layout } from './components/layout/Layout'
 import { Dashboard } from './components/dashboard/Dashboard'
 import { GmailManagement } from './components/gmail/GmailManagement'
@@ -18,11 +19,11 @@ const queryClient = new QueryClient({
   },
 })
 
-function App() {
+function AppContent() {
+  const { theme } = useTheme()
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
+    <>
+      <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="gmail" element={<GmailManagement />} />
@@ -33,10 +34,9 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
-      </BrowserRouter>
       <Toaster
         position="top-right"
-        theme="dark"
+        theme={theme}
         richColors
         toastOptions={{
           classNames: {
@@ -45,7 +45,19 @@ function App() {
           },
         }}
       />
-    </QueryClientProvider>
+    </>
+  )
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ThemeProvider>
   )
 }
 

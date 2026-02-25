@@ -1,8 +1,11 @@
-import { Bell } from 'lucide-react'
+import { Bell, Sun, Moon } from 'lucide-react'
 import { useMetrics } from '@/hooks/useLogs'
+import { useTheme } from '@/hooks/useTheme'
+import { Button } from '@/components/ui/button'
 
 export function Header() {
   const { data: metrics } = useMetrics()
+  const { theme, toggleTheme } = useTheme()
 
   return (
     <header className="h-16 bg-card border-b border-border px-6 flex items-center justify-between">
@@ -18,6 +21,21 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-6">
+        {/* Theme Toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleTheme}
+          className="text-muted-foreground hover:text-foreground"
+          title={theme === 'dark' ? 'สลับเป็นโหมดสว่าง' : 'สลับเป็นโหมดมืด'}
+        >
+          {theme === 'dark' ? (
+            <Sun className="w-5 h-5" />
+          ) : (
+            <Moon className="w-5 h-5" />
+          )}
+        </Button>
+
         {/* Quick Stats */}
         {metrics && (
           <div className="flex items-center gap-4 text-sm">

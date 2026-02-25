@@ -6,7 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gmail Notifier Dashboard</title>
   </head>
-  <body class="dark">
+  <body>
+    <script>
+      (function() {
+        const stored = localStorage.getItem('gmail-notifier-theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const isDark = stored === 'light' ? false : stored === 'dark' ? true : prefersDark;
+        document.documentElement.classList.toggle('dark', isDark);
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
