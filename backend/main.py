@@ -1,4 +1,5 @@
 import logging
+import sys
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from backend.core.config import settings
@@ -15,9 +16,14 @@ from backend.routes import (
 
 logger = logging.getLogger(__name__)
 
+# บังคับ log ไป stdout เพื่อให้เห็นใน Easypanel Logs
+logging.basicConfig(stream=sys.stdout, level=logging.INFO, force=True)
+logger.info("Backend module loading...")
+
 # สร้าง tables (ถ้ายังไม่มี) - ถ้าล้มยังให้ API ขึ้นก่อน
 try:
     Base.metadata.create_all(bind=engine)
+    logger.info("Database tables OK")
 except Exception as e:
     logger.warning("Database init failed (tables may already exist or path issue): %s", e)
 
@@ -62,13 +68,14 @@ def api_health():
 
 
 # Register routes
+logger.info("Registering routes...")
 app.include_router(compat.router)  # /api/health, /api/config, /api/metrics, /api/rules
 app.include_router(gmail_accounts.router, prefix=settings.api_prefix)
 app.include_router(notification_channels.router, prefix=settings.api_prefix)
 app.include_router(filter_rules.router, prefix=settings.api_prefix)
 app.include_router(notification_logs.router, prefix=settings.api_prefix)
 app.include_router(config_settings.router, prefix=settings.api_prefix)
-
+logger.info("Backend app ready")
 
 if __name__ == "__main__":
     import uvicorn
