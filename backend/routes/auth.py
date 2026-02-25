@@ -1,5 +1,6 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+import os
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 import httpx
@@ -97,7 +98,7 @@ def google_login():
 
 
 @router.get("/google/callback")
-async def google_callback(code: str, db: Session = Depends(get_db)):
+async def google_callback(request: Request, code: str, db: Session = Depends(get_db)):
     """Handle Google OAuth callback and create/login user"""
     try:
         if not settings.google_client_id or not settings.google_client_secret:
@@ -171,8 +172,13 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
         # Create tokens
         token_data = AuthService.create_tokens(db, user)
 
-        # Redirect ไป frontend พร้อม tokens ใน hash (ไม่ส่งไปที่ server)
-        frontend_url = getattr(settings, "frontend_url", "http://localhost:3000").rstrip("/")
+        # Redirect ไป frontend พร้อม tokens ใน hash
+        # ใช้ origin จาก request (รองรับ proxy) หรือ FRONTEND_URL env
+        base = request.base_url
+        scheme = request.headers.get("x-forwarded-proto") or str(base.scheme)
+        host = request.headers.get("x-forwarded-host") or request.headers.get("host") or str(base.netloc)
+        frontend_url = os.environ.get("FRONTEND_URL") or f"{scheme}://{host}"
+        frontend_url = frontend_url.rstrip("/")
         params = urlencode({
             "access_token": token_data["access_token"],
             "refresh_token": token_data["refresh_token"],
