@@ -8,6 +8,7 @@ import { GmailManagement } from './components/gmail/GmailManagement'
 import { ChannelManagement } from './components/channels/ChannelManagement'
 import { FilterManagement } from './components/filters/FilterManagement'
 import { LogsPage } from './components/activity/LogsPage'
+import { WebhookGuidePage } from './components/guide/WebhookGuidePage'
 import { Settings } from './components/settings/Settings'
 
 const queryClient = new QueryClient({
@@ -30,6 +31,7 @@ function AppContent() {
             <Route path="channels" element={<ChannelManagement />} />
             <Route path="filters" element={<FilterManagement />} />
             <Route path="logs" element={<LogsPage />} />
+            <Route path="webhook-guide" element={<WebhookGuidePage />} />
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
