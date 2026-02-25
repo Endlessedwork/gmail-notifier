@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 import httpx
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 from backend.core.database import get_db
 from backend.core.auth import get_current_user
@@ -173,11 +173,15 @@ async def google_callback(request: Request, code: str, db: Session = Depends(get
         token_data = AuthService.create_tokens(db, user)
 
         # Redirect ไป frontend พร้อม tokens ใน hash
-        # ใช้ origin จาก request (รองรับ proxy) หรือ FRONTEND_URL env
-        base = request.base_url
-        scheme = request.headers.get("x-forwarded-proto") or str(base.scheme)
-        host = request.headers.get("x-forwarded-host") or request.headers.get("host") or str(base.netloc)
-        frontend_url = os.environ.get("FRONTEND_URL") or f"{scheme}://{host}"
+        # ลำดับ: FRONTEND_URL env > derive จาก GOOGLE_REDIRECT_URI > request headers
+        frontend_url = os.environ.get("FRONTEND_URL")
+        if not frontend_url:
+            # derive จาก callback URL (production: https://domain.com/api/... → https://domain.com)
+            parsed = urlparse(settings.google_redirect_uri)
+            base = f"{parsed.scheme}://{parsed.netloc}"
+            if "localhost" in parsed.netloc and "8000" in parsed.netloc:
+                base = "http://localhost:3000"  # dev: frontend อยู่ที่ 3000
+            frontend_url = base
         frontend_url = frontend_url.rstrip("/")
         params = urlencode({
             "access_token": token_data["access_token"],

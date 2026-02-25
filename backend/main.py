@@ -68,6 +68,16 @@ def api_health():
     return JSONResponse(content={"status": "healthy"})
 
 
+# Global exception handler - log 500 และ return detail เมื่อ debug
+@app.exception_handler(Exception)
+def global_exception_handler(request, exc):
+    logger.exception("Unhandled error: %s", exc)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc) if settings.debug else "Internal server error"},
+    )
+
+
 # Register routes
 logger.info("Registering routes...")
 app.include_router(compat.router)  # /api/health, /api/config, /api/metrics, /api/rules

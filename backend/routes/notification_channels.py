@@ -18,11 +18,15 @@ router = APIRouter(
 
 
 def _channel_to_response(channel) -> NotificationChannelResponse:
+    try:
+        config = json.loads(channel.config) if channel.config else {}
+    except (json.JSONDecodeError, TypeError):
+        config = {}
     return NotificationChannelResponse(
         id=channel.id,
         type=channel.type,
         name=channel.name,
-        config=json.loads(channel.config),
+        config=config,
         enabled=channel.enabled,
         created_at=channel.created_at,
         updated_at=channel.updated_at,

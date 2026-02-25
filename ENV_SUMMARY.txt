@@ -1,0 +1,39 @@
+# สรุป Environment Variables สำหรับ Gmail Notifier
+# อัปเดต: 2026-02
+
+## บังคับ (Required)
+
+| Variable | คำอธิบาย | ตัวอย่าง |
+|----------|----------|----------|
+| SECRET_KEY | สำหรับ JWT, session | python -c "import secrets; print(secrets.token_urlsafe(32))" |
+| ENCRYPTION_KEY | สำหรับเข้ารหัสรหัสผ่าน Gmail | python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())" |
+
+## Google OAuth (ถ้าใช้ Login with Google)
+
+| Variable | คำอธิบาย | Local | Production |
+|----------|----------|-------|------------|
+| GOOGLE_CLIENT_ID | จาก Google Cloud Console | ค่าเดียวกัน | ค่าเดียวกัน |
+| GOOGLE_CLIENT_SECRET | จาก Google Cloud Console | ค่าเดียวกัน | ค่าเดียวกัน |
+| GOOGLE_REDIRECT_URI | Callback URL หลัง login | http://localhost:8000/api/v1/auth/google/callback | https://gmail-notifier.sky168.info/api/v1/auth/google/callback |
+
+## เลือกได้ (Optional)
+
+| Variable | Default | คำอธิบาย |
+|----------|---------|----------|
+| ALLOWED_ORIGINS | localhost:3000, 5173 | CORS - ใช้ * สำหรับ production |
+| FRONTEND_URL | derive จาก GOOGLE_REDIRECT_URI | Override redirect หลัง login (ถ้า frontend คนละ domain) |
+| DATABASE_URL | sqlite:///./data/gmail_notifier.db | Path ฐานข้อมูล (Docker: sqlite:///app/data/data.db) |
+| DEBUG | false | true = dev mode |
+| CHECK_INTERVAL | 60 | วินาทีระหว่างเช็คอีเมล |
+| MAX_BODY_LENGTH | 300 | ความยาว body สูงสุด (ตัวอักษร) |
+| TZ | - | Timezone เช่น Asia/Bangkok |
+| PYTHONUNBUFFERED | - | 1 สำหรับ Docker |
+
+## Production (Easypanel/Docker) - ขั้นต่ำ
+
+ENCRYPTION_KEY=<key>
+SECRET_KEY=<key>
+ALLOWED_ORIGINS=*
+GOOGLE_CLIENT_ID=<id>
+GOOGLE_CLIENT_SECRET=<secret>
+GOOGLE_REDIRECT_URI=https://your-domain.com/api/v1/auth/google/callback
