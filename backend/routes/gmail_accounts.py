@@ -1,7 +1,8 @@
 import imaplib
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from backend.core.database import get_db, get_db_context
+from backend.core.database import get_db
 from backend.services import GmailAccountService
 from backend.schemas import (
     GmailAccountCreate,
@@ -12,6 +13,7 @@ from backend.schemas import (
 )
 
 router = APIRouter(prefix="/gmail-accounts", tags=["Gmail Accounts"])
+logger = logging.getLogger(__name__)
 
 
 @router.get("", response_model=GmailAccountList)
@@ -62,22 +64,24 @@ def test_gmail_connection(data: GmailAccountTestRequest):
 @router.post("/{account_id}/check-now")
 def check_now_gmail_account(
     account_id: int,
+    db: Session = Depends(get_db),
 ):
     """ดึงอีเมลทันทีสำหรับ account นี้"""
     from worker.config_watcher import ConfigWatcher
-    from worker.main import WorkerOrchestrator
+    from worker.orchestrator import WorkerOrchestrator
 
-    with get_db_context() as db:
-        account = GmailAccountService.get_by_id(db, account_id)
-        if not account:
-            raise HTTPException(status_code=404, detail="Account not found")
+    account = GmailAccountService.get_by_id(db, account_id)
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    try:
         watcher = ConfigWatcher(db)
         orchestrator = WorkerOrchestrator(check_interval=60)
-        try:
-            orchestrator.process_account(account, watcher)
-            return {"success": True, "message": "ตรวจสอบอีเมลเรียบร้อย"}
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+        orchestrator.process_account(account, watcher)
+        return {"success": True, "message": "ตรวจสอบอีเมลเรียบร้อย"}
+    except Exception as e:
+        db.rollback()
+        logger.exception("Check-now failed: %s", e)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/{account_id}/test-connection")
