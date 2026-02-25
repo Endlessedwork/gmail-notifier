@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Loader2, Wifi } from 'lucide-react'
+import { Loader2, Wifi, Eye, EyeOff } from 'lucide-react'
 import { useCreateGmailAccount, useUpdateGmailAccount } from '@/hooks/useGmailAccounts'
 import { gmailAccountsApi } from '@/api'
 import { toast } from 'sonner'
@@ -37,6 +37,7 @@ export function GmailDialog({
   })
 
   const [testLoading, setTestLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const createAccount = useCreateGmailAccount()
   const updateAccount = useUpdateGmailAccount()
@@ -61,9 +62,10 @@ export function GmailDialog({
       }
       setTestLoading(true)
       try {
+        const password = formData.password.replace(/\s/g, '') // ลบช่องว่างก่อนส่ง
         await gmailAccountsApi.testConnection({
           email: formData.email,
-          password: formData.password,
+          password,
           imap_server: formData.imap_server,
           imap_port: formData.imap_port,
         })
@@ -156,18 +158,36 @@ export function GmailDialog({
             <Label htmlFor="password">
               {account ? 'App Password (เว้นว่างถ้าไม่เปลี่ยน)' : 'App Password'}
             </Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="xxxx xxxx xxxx xxxx"
-              value={formData.password}
-              onChange={(e) =>
-                setFormData({ ...formData, password: e.target.value })
-              }
-              required={!account}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="16 ตัว (มีหรือไม่มีช่องว่างก็ได้)"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                required={!account}
+                className="pr-10"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <Eye className="w-4 h-4 text-muted-foreground" />
+                )}
+              </Button>
+            </div>
             <p className="text-xs text-muted-foreground">
-              ใช้ App Password จาก Google Account Security Settings
+              ใช้ App Password จาก myaccount.google.com/apppasswords — 16 ตัวอักษร
+              ใส่แบบมีหรือไม่มีช่องว่างก็ได้ (ระบบจะลบช่องว่างให้อัตโนมัติ)
             </p>
           </div>
 

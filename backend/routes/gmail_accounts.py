@@ -47,8 +47,9 @@ def get_gmail_account(
 def test_gmail_connection(data: GmailAccountTestRequest):
     """ทดสอบการเชื่อมต่อ IMAP (ไม่บันทึกข้อมูล)"""
     try:
+        password = data.password.replace(" ", "")  # ลบช่องว่าง
         mail = imaplib.IMAP4_SSL(data.imap_server, data.imap_port)
-        mail.login(data.email, data.password)
+        mail.login(data.email, password)
         mail.logout()
         return {"success": True, "message": "เชื่อมต่อสำเร็จ"}
     except imaplib.IMAP4.error as e:
@@ -68,7 +69,7 @@ def test_existing_gmail_connection(
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
     try:
-        password = GmailAccountService.get_decrypted_password(account)
+        password = GmailAccountService.get_decrypted_password(account).replace(" ", "")  # ลบช่องว่าง
         mail = imaplib.IMAP4_SSL(account.imap_server, account.imap_port)
         mail.login(account.email, password)
         mail.logout()

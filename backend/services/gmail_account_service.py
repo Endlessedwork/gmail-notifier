@@ -35,8 +35,9 @@ class GmailAccountService:
     @staticmethod
     def create(db: Session, account_data: GmailAccountCreate) -> GmailAccount:
         """สร้าง Gmail account ใหม่"""
-        # เข้ารหัสรหัสผ่าน
-        encrypted_password = encrypt_password(account_data.password)
+        # ลบช่องว่างใน App Password (Gmail ยอมรับทั้งแบบมีและไม่มี)
+        password = account_data.password.replace(" ", "")
+        encrypted_password = encrypt_password(password)
 
         account = GmailAccount(
             email=account_data.email,
@@ -67,9 +68,9 @@ class GmailAccountService:
 
         update_data = account_data.model_dump(exclude_unset=True)
 
-        # เข้ารหัสรหัสผ่านใหม่ถ้ามีการเปลี่ยน
+        # เข้ารหัสรหัสผ่านใหม่ถ้ามีการเปลี่ยน (ลบช่องว่างก่อน)
         if "password" in update_data:
-            update_data["password"] = encrypt_password(update_data["password"])
+            update_data["password"] = encrypt_password(update_data["password"].replace(" ", ""))
 
         for field, value in update_data.items():
             setattr(account, field, value)

@@ -36,7 +36,7 @@ class EmailChecker:
             True ถ้าเชื่อมต่อสำเร็จ
         """
         try:
-            password = decrypt_password(self.account.password)
+            password = decrypt_password(self.account.password).replace(" ", "")  # ลบช่องว่าง
             self.mail = imaplib.IMAP4_SSL(
                 self.account.imap_server,
                 self.account.imap_port
