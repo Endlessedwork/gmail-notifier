@@ -1,6 +1,7 @@
 import logging
 import sys
 from fastapi import FastAPI
+from fastapi.exceptions import HTTPException, RequestValidationError
 from fastapi.responses import JSONResponse
 from backend.core.config import settings
 from backend.core.database import engine, Base
@@ -69,8 +70,13 @@ def api_health():
 
 
 # Global exception handler - log 500 และ return detail เมื่อ debug
+# HTTPException (401, 404 ฯลฯ) และ RequestValidationError (422) ให้ FastAPI จัดการ
 @app.exception_handler(Exception)
 def global_exception_handler(request, exc):
+    if isinstance(exc, HTTPException):
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    if isinstance(exc, RequestValidationError):
+        raise exc  # FastAPI มี handler สำหรับ 422
     logger.exception("Unhandled error: %s", exc)
     return JSONResponse(
         status_code=500,
