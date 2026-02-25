@@ -10,12 +10,24 @@ from sqlalchemy.orm import Session
 from backend.core.config import settings
 from backend.core.database import get_db
 
+BCRYPT_MAX_PASSWORD_BYTES = 72
+
+
+def _truncate_for_bcrypt(s: str) -> str:
+    """Truncate string to 72 bytes for bcrypt (raises ValueError if longer)."""
+    if not s:
+        return s
+    encoded = s.encode("utf-8")
+    if len(encoded) <= BCRYPT_MAX_PASSWORD_BYTES:
+        return s
+    return encoded[:BCRYPT_MAX_PASSWORD_BYTES].decode("utf-8", errors="ignore") or s[:1]
+
+
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto",
     bcrypt__default_rounds=12,
-    # Truncate passwords longer than 72 bytes for bcrypt
-    truncate_error=False,
+    bcrypt__truncate_error=False,
 )
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.api_prefix}/auth/login")
 
@@ -25,16 +37,12 @@ REFRESH_TOKEN_EXPIRE_DAYS = 7  # 7 days
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    # Truncate to 72 bytes for bcrypt compatibility
-    if len(plain_password.encode('utf-8')) > 72:
-        plain_password = plain_password.encode('utf-8')[:72].decode('utf-8', errors='ignore')
+    plain_password = _truncate_for_bcrypt(plain_password or "")
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def hash_password(password: str) -> str:
-    # Truncate to 72 bytes for bcrypt compatibility
-    if len(password.encode('utf-8')) > 72:
-        password = password.encode('utf-8')[:72].decode('utf-8', errors='ignore')
+    password = _truncate_for_bcrypt(password or "")
     return pwd_context.hash(password)
 
 
