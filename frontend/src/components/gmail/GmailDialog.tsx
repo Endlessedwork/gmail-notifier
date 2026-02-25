@@ -45,10 +45,22 @@ export function GmailDialog({
   const isLoading = createAccount.isPending || updateAccount.isPending
 
   const handleTestConnection = async () => {
-    if (account) {
+    // ถ้ามี password ในฟอร์ม (กรณีเพิ่มใหม่ หรือแก้ไขและใส่รหัสใหม่) → ใช้ข้อมูลจากฟอร์ม
+    const useFormData = !!formData.password
+    if (useFormData) {
+      if (!formData.email || !formData.password) {
+        toast.error('กรอก Email และ App Password ก่อนทดสอบ')
+        return
+      }
       setTestLoading(true)
       try {
-        await gmailAccountsApi.testExistingConnection(account.id)
+        const password = formData.password.replace(/\s/g, '')
+        await gmailAccountsApi.testConnection({
+          email: formData.email,
+          password,
+          imap_server: formData.imap_server,
+          imap_port: formData.imap_port,
+        })
         toast.success('เชื่อมต่อสำเร็จ')
       } catch (err: any) {
         toast.error(err?.data?.detail || err?.message || 'เชื่อมต่อล้มเหลว')
@@ -56,19 +68,14 @@ export function GmailDialog({
         setTestLoading(false)
       }
     } else {
-      if (!formData.email || !formData.password) {
-        toast.error('กรอก Email และ App Password ก่อนทดสอบ')
+      // ไม่มี password ในฟอร์ม → ใช้ข้อมูลที่บันทึกไว้ (กรณีแก้ไขและไม่เปลี่ยนรหัส)
+      if (!account) {
+        toast.error('กรอก App Password ก่อนทดสอบ')
         return
       }
       setTestLoading(true)
       try {
-        const password = formData.password.replace(/\s/g, '') // ลบช่องว่างก่อนส่ง
-        await gmailAccountsApi.testConnection({
-          email: formData.email,
-          password,
-          imap_server: formData.imap_server,
-          imap_port: formData.imap_port,
-        })
+        await gmailAccountsApi.testExistingConnection(account.id)
         toast.success('เชื่อมต่อสำเร็จ')
       } catch (err: any) {
         toast.error(err?.data?.detail || err?.message || 'เชื่อมต่อล้มเหลว')
@@ -226,7 +233,9 @@ export function GmailDialog({
               <Label>ทดสอบการเชื่อมต่อ</Label>
               <p className="text-xs text-muted-foreground">
                 {account
-                  ? 'ทดสอบด้วยข้อมูลที่บันทึกไว้'
+                  ? formData.password
+                    ? 'ทดสอบด้วยรหัสที่ใส่ในฟอร์ม'
+                    : 'ทดสอบด้วยข้อมูลที่บันทึกไว้ (หรือใส่รหัสใหม่เพื่อทดสอบก่อนบันทึก)'
                   : 'กรอกข้อมูลด้านบนก่อน แล้วกดทดสอบ'}
               </p>
             </div>
@@ -235,7 +244,10 @@ export function GmailDialog({
               variant="outline"
               size="sm"
               onClick={handleTestConnection}
-              disabled={testLoading || (!account && (!formData.email || !formData.password))}
+              disabled={
+                testLoading ||
+                (!formData.email || (!formData.password && !account))
+              }
             >
               {testLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               <Wifi className="w-4 h-4 mr-2" />
