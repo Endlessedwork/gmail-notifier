@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import Optional
+import json
 from backend.core.database import get_db
 from backend.core.auth import get_current_user
 from backend.models import User
@@ -13,6 +14,24 @@ from backend.schemas import (
 )
 
 router = APIRouter(prefix="/filter-rules", tags=["Filter Rules"])
+
+
+def _serialize_rule(rule) -> FilterRuleResponse:
+    """แปลง FilterRule model เป็น response (แปลง channel_ids จาก JSON string เป็น list)"""
+    rule_dict = {
+        "id": rule.id,
+        "gmail_account_id": rule.gmail_account_id,
+        "name": rule.name,
+        "field": rule.field,
+        "match_type": rule.match_type,
+        "match_value": rule.match_value,
+        "channel_ids": json.loads(rule.channel_ids) if isinstance(rule.channel_ids, str) else rule.channel_ids,
+        "priority": rule.priority,
+        "enabled": rule.enabled,
+        "created_at": rule.created_at,
+        "updated_at": rule.updated_at,
+    }
+    return FilterRuleResponse(**rule_dict)
 
 
 @router.get("", response_model=FilterRuleList)
@@ -30,12 +49,12 @@ def list_filter_rules(
         rules = FilterRuleService.get_by_account(db, account_id)
         # Filter to only rules owned by current user
         rules = [r for r in rules if r.user_id == current_user.id or r.user_id is None]
-        return FilterRuleList(total=len(rules), rules=rules)
+        return FilterRuleList(total=len(rules), rules=[_serialize_rule(r) for r in rules])
 
     rules, total = FilterRuleService.get_all(
         db, skip, limit, user_id=current_user.id
     )
-    return FilterRuleList(total=total, rules=rules)
+    return FilterRuleList(total=total, rules=[_serialize_rule(r) for r in rules])
 
 
 @router.get("/{rule_id}", response_model=FilterRuleResponse)

@@ -14,7 +14,7 @@ class FilterRule(Base):
     field = Column(String, nullable=False)  # from, subject, body
     match_type = Column(String, default="contains")  # contains, regex, equals
     match_value = Column(String, nullable=False)
-    channel_id = Column(Integer, ForeignKey("notification_channels.id", ondelete="CASCADE"), nullable=False)
+    channel_ids = Column(String, nullable=False)  # JSON array: "[1,2,3]"
     priority = Column(Integer, default=50)  # Lower = higher priority
     enabled = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
@@ -23,5 +23,5 @@ class FilterRule(Base):
     # Relationships
     user = relationship("User", back_populates="filter_rules")
     gmail_account = relationship("GmailAccount", back_populates="filter_rules")
-    channel = relationship("NotificationChannel", back_populates="filter_rules")
+    # channel relationship ถูกลบเพราะใช้ channel_ids (JSON) แทน
     notification_logs = relationship("NotificationLog", back_populates="filter_rule")

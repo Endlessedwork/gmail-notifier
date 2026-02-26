@@ -4,6 +4,7 @@ WorkerOrchestrator - logic สำหรับ check อีเมลและส�
 """
 
 import logging
+import json
 from typing import Dict, List
 from datetime import datetime
 
@@ -77,29 +78,51 @@ class WorkerOrchestrator:
             logger.info(f"ℹ️ No matching rule for email: {subject}")
             return
 
-        channel = watcher.get_channel(matched_rule.channel_id)
-        if not channel:
-            logger.error(f"❌ Channel {matched_rule.channel_id} not found")
+        # แปลง channel_ids จาก JSON string เป็น list
+        try:
+            channel_ids = json.loads(matched_rule.channel_ids) if isinstance(matched_rule.channel_ids, str) else matched_rule.channel_ids
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.error(f"❌ Failed to parse channel_ids for rule {matched_rule.id}: {e}")
             return
 
-        sender_instance = NotificationSender(channel)
-        success = sender_instance.send(
-            subject=subject,
-            sender=sender,
-            date_str=date_str,
-            body=body,
-            rule_name=matched_rule.name
-        )
+        if not channel_ids:
+            logger.error(f"❌ No channels configured for rule {matched_rule.id}")
+            return
 
-        self._log_notification(
-            account_id=account_id,
-            filter_rule_id=matched_rule.id,
-            channel_id=channel.id,
-            email_subject=subject,
-            email_from=sender,
-            email_date=date_str,
-            success=success
-        )
+        # ส่ง notification ไปทุก channel
+        for channel_id in channel_ids:
+            channel = watcher.get_channel(channel_id)
+            if not channel:
+                logger.error(f"❌ Channel {channel_id} not found")
+                self._log_notification(
+                    account_id=account_id,
+                    filter_rule_id=matched_rule.id,
+                    channel_id=channel_id,
+                    email_subject=subject,
+                    email_from=sender,
+                    email_date=date_str,
+                    success=False
+                )
+                continue
+
+            sender_instance = NotificationSender(channel)
+            success = sender_instance.send(
+                subject=subject,
+                sender=sender,
+                date_str=date_str,
+                body=body,
+                rule_name=matched_rule.name
+            )
+
+            self._log_notification(
+                account_id=account_id,
+                filter_rule_id=matched_rule.id,
+                channel_id=channel.id,
+                email_subject=subject,
+                email_from=sender,
+                email_date=date_str,
+                success=success
+            )
 
     def _log_notification(
         self,

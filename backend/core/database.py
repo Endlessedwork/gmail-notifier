@@ -124,6 +124,32 @@ def run_migrations():
                     cur.execute("ALTER TABLE gmail_accounts ADD COLUMN sync_mode TEXT DEFAULT 'new_only'")
             except sqlite3.OperationalError:
                 pass
+
+        # Migration: channel_id → channel_ids ใน filter_rules
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='filter_rules'")
+        has_filter_rules = cur.fetchone()
+        if has_filter_rules:
+            try:
+                cur.execute("PRAGMA table_info(filter_rules)")
+                cols = [r[1] for r in cur.fetchall()]
+
+                # เพิ่ม channel_ids ถ้ายังไม่มี
+                if "channel_ids" not in cols:
+                    cur.execute("ALTER TABLE filter_rules ADD COLUMN channel_ids TEXT")
+
+                    # แปลงข้อมูลเก่าจาก channel_id เป็น channel_ids (JSON array)
+                    if "channel_id" in cols:
+                        import json
+                        cur.execute("SELECT id, channel_id FROM filter_rules WHERE channel_id IS NOT NULL")
+                        rows = cur.fetchall()
+                        for row_id, channel_id in rows:
+                            channel_ids_json = json.dumps([channel_id])
+                            cur.execute("UPDATE filter_rules SET channel_ids = ? WHERE id = ?", (channel_ids_json, row_id))
+
+                    # ไม่ลบ channel_id column (SQLite ไม่รองรับ DROP COLUMN)
+                    # แค่ไม่ใช้มันในโค้ดใหม่
+            except sqlite3.OperationalError:
+                pass
         conn.commit()
         conn.close()
     except Exception as e:

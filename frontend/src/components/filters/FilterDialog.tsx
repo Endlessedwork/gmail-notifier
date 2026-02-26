@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Loader2 } from 'lucide-react'
 import { useCreateFilterRule, useUpdateFilterRule } from '@/hooks/useFilterRules'
 
@@ -43,7 +44,7 @@ export function FilterDialog({
     field: 'from' as FilterField,
     match_type: 'contains' as MatchType,
     match_value: '',
-    channel_id: 0,
+    channel_ids: [] as number[],
     priority: 50,
     enabled: true,
   })
@@ -61,7 +62,7 @@ export function FilterDialog({
         field: rule.field,
         match_type: rule.match_type,
         match_value: rule.match_value,
-        channel_id: rule.channel_id,
+        channel_ids: rule.channel_ids || [],
         priority: rule.priority,
         enabled: rule.enabled,
       })
@@ -72,7 +73,7 @@ export function FilterDialog({
         field: 'from',
         match_type: 'contains',
         match_value: '',
-        channel_id: channels[0]?.id || 0,
+        channel_ids: [],
         priority: 50,
         enabled: true,
       })
@@ -204,26 +205,49 @@ export function FilterDialog({
             )}
           </div>
 
-          {/* Channel */}
+          {/* Channels (Multi-select) */}
           <div className="space-y-2">
-            <Label htmlFor="channel_id">ส่งไปที่ Channel</Label>
-            <Select
-              value={formData.channel_id.toString()}
-              onValueChange={(value) =>
-                setFormData({ ...formData, channel_id: parseInt(value) })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="เลือก Channel" />
-              </SelectTrigger>
-              <SelectContent>
-                {channels.map((channel) => (
-                  <SelectItem key={channel.id} value={channel.id.toString()}>
-                    {channel.name} ({channel.type})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>ส่งไปที่ Channels (เลือกได้หลายช่องทาง)</Label>
+            <div className="border rounded-md p-4 space-y-3 max-h-[200px] overflow-y-auto">
+              {channels.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  ยังไม่มี Channel กรุณาสร้าง Channel ก่อน
+                </p>
+              ) : (
+                channels.map((channel) => (
+                  <div key={channel.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`channel-${channel.id}`}
+                      checked={formData.channel_ids.includes(channel.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setFormData({
+                            ...formData,
+                            channel_ids: [...formData.channel_ids, channel.id],
+                          })
+                        } else {
+                          setFormData({
+                            ...formData,
+                            channel_ids: formData.channel_ids.filter(
+                              (id) => id !== channel.id
+                            ),
+                          })
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor={`channel-${channel.id}`}
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      {channel.name} ({channel.type})
+                    </label>
+                  </div>
+                ))
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              เลือกช่องทางที่ต้องการรับการแจ้งเตือน (เลือกได้มากกว่า 1 ช่องทาง)
+            </p>
           </div>
 
           {/* Priority */}

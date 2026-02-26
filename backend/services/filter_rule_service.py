@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from typing import List, Optional, Tuple
 import re
+import json
 from backend.models import FilterRule
 from backend.schemas import FilterRuleCreate, FilterRuleUpdate
 from fastapi import HTTPException, status
@@ -73,14 +74,14 @@ class FilterRuleService:
                 detail=f"Gmail account {rule_data.gmail_account_id} not found",
             )
 
-        channel = NotificationChannelService.get_by_id(
-            db, rule_data.channel_id, user_id
-        )
-        if not channel:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Notification channel {rule_data.channel_id} not found",
-            )
+        # Validate ทุก channel_id
+        for channel_id in rule_data.channel_ids:
+            channel = NotificationChannelService.get_by_id(db, channel_id, user_id)
+            if not channel:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Notification channel {channel_id} not found",
+                )
 
         if rule_data.match_type == "regex":
             try:
@@ -91,7 +92,10 @@ class FilterRuleService:
                     detail=f"Invalid regex pattern: {str(e)}",
                 )
 
-        rule = FilterRule(**rule_data.model_dump(), user_id=user_id)
+        # แปลง channel_ids (list) เป็น JSON string สำหรับ database
+        data_dict = rule_data.model_dump()
+        data_dict['channel_ids'] = json.dumps(rule_data.channel_ids)
+        rule = FilterRule(**data_dict, user_id=user_id)
         db.add(rule)
         db.commit()
         db.refresh(rule)
@@ -124,19 +128,22 @@ class FilterRuleService:
                         detail=f"Invalid regex pattern: {str(e)}",
                     )
 
-        if "channel_id" in update_data:
+        if "channel_ids" in update_data:
             from backend.services.notification_channel_service import (
                 NotificationChannelService,
             )
 
-            channel = NotificationChannelService.get_by_id(
-                db, update_data["channel_id"], user_id
-            )
-            if not channel:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Notification channel {update_data['channel_id']} not found",
-                )
+            # Validate ทุก channel_id
+            for channel_id in update_data["channel_ids"]:
+                channel = NotificationChannelService.get_by_id(db, channel_id, user_id)
+                if not channel:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail=f"Notification channel {channel_id} not found",
+                    )
+
+            # แปลง list เป็น JSON string
+            update_data["channel_ids"] = json.dumps(update_data["channel_ids"])
 
         for field, value in update_data.items():
             setattr(rule, field, value)

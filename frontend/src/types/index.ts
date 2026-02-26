@@ -116,7 +116,7 @@ export interface FilterRule {
   field: FilterField
   match_type: MatchType
   match_value: string
-  channel_id: number
+  channel_ids: number[]
   priority: number
   enabled: boolean
   created_at: string
@@ -129,7 +129,7 @@ export interface FilterRuleCreate {
   field: FilterField
   match_type?: MatchType
   match_value: string
-  channel_id: number
+  channel_ids: number[]
   priority?: number
   enabled?: boolean
 }
@@ -139,7 +139,7 @@ export interface FilterRuleUpdate {
   field?: FilterField
   match_type?: MatchType
   match_value?: string
-  channel_id?: number
+  channel_ids?: number[]
   priority?: number
   enabled?: boolean
 }

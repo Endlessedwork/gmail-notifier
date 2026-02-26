@@ -47,9 +47,11 @@ export function FilterManagement() {
     return account?.email || `Account #${accountId}`
   }
 
-  const getChannelName = (channelId: number) => {
-    const channel = channels.find((c) => c.id === channelId)
-    return channel?.name || `Channel #${channelId}`
+  const getChannelNames = (channelIds: number[]) => {
+    return channelIds.map((id) => {
+      const channel = channels.find((c) => c.id === id)
+      return channel?.name || `Channel #${id}`
+    })
   }
 
   if (rulesError) {
@@ -180,12 +182,17 @@ export function FilterManagement() {
                         </div>
 
                         {/* Destination */}
-                        <div className="flex items-center gap-2 text-sm">
+                        <div className="flex items-center gap-2 text-sm flex-wrap">
                           <ArrowRight className="w-4 h-4 text-muted-foreground" />
                           <span className="text-muted-foreground">Send to</span>
-                          <code className="px-2 py-1 rounded bg-muted font-mono text-xs text-primary">
-                            {getChannelName(rule.channel_id)}
-                          </code>
+                          {getChannelNames(rule.channel_ids).map((name, idx) => (
+                            <code
+                              key={idx}
+                              className="px-2 py-1 rounded bg-muted font-mono text-xs text-primary"
+                            >
+                              {name}
+                            </code>
+                          ))}
                         </div>
                       </div>
 

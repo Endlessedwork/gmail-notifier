@@ -9,7 +9,7 @@ class FilterRuleBase(BaseModel):
     field: Literal["from", "subject", "body"]
     match_type: Literal["contains", "regex", "equals"] = "contains"
     match_value: str = Field(..., min_length=1)
-    channel_id: int
+    channel_ids: List[int] = Field(..., min_items=1, description="List of channel IDs")
     priority: int = Field(default=50, ge=0, le=100)
     enabled: bool = True
 
@@ -23,7 +23,7 @@ class FilterRuleUpdate(BaseModel):
     field: Optional[Literal["from", "subject", "body"]] = None
     match_type: Optional[Literal["contains", "regex", "equals"]] = None
     match_value: Optional[str] = Field(None, min_length=1)
-    channel_id: Optional[int] = None
+    channel_ids: Optional[List[int]] = Field(None, min_items=1)
     priority: Optional[int] = Field(None, ge=0, le=100)
     enabled: Optional[bool] = None
 
