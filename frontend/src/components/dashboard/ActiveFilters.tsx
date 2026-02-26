@@ -70,11 +70,13 @@ export function ActiveFilters() {
                     </code>
                   </div>
 
-                  <div className="flex items-center gap-2 text-muted-foreground">
+                  <div className="flex items-center gap-2 text-muted-foreground flex-wrap">
                     <span>→</span>
-                    <span className="font-mono text-amber-400">
-                      Channel #{rule.channel_id}
-                    </span>
+                    {rule.channel_ids.map((channelId, idx) => (
+                      <span key={idx} className="font-mono text-amber-400">
+                        Ch#{channelId}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </motion.div>
