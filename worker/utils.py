@@ -40,7 +40,7 @@ def decode_mime_header(header_value: str) -> str:
 
 def get_email_body(msg, max_length: int = 300) -> str:
     """
-    ดึงเนื้อหาอีเมล
+    ดึงเนื้อหาอีเมล (รองรับทั้ง text/plain และ text/html)
 
     Args:
         msg: Email message object
@@ -50,9 +50,11 @@ def get_email_body(msg, max_length: int = 300) -> str:
         Email body text
     """
     body = ""
+    html_body = ""
 
     try:
         if msg.is_multipart():
+            # หา text/plain ก่อน (prefer plain text)
             for part in msg.walk():
                 content_type = part.get_content_type()
                 if content_type == "text/plain":
@@ -62,12 +64,29 @@ def get_email_body(msg, max_length: int = 300) -> str:
                         break
                     except Exception:
                         continue
+                elif content_type == "text/html" and not html_body:
+                    # เก็บ HTML ไว้เป็น fallback
+                    try:
+                        charset = part.get_content_charset() or 'utf-8'
+                        html_body = part.get_payload(decode=True).decode(charset, errors='replace')
+                    except Exception:
+                        continue
         else:
             try:
                 charset = msg.get_content_charset() or 'utf-8'
-                body = msg.get_payload(decode=True).decode(charset, errors='replace')
+                payload = msg.get_payload(decode=True).decode(charset, errors='replace')
+                content_type = msg.get_content_type()
+
+                if content_type == "text/plain":
+                    body = payload
+                elif content_type == "text/html":
+                    html_body = payload
             except Exception:
                 body = "[ไม่สามารถอ่านเนื้อหาได้]"
+
+        # ถ้าไม่มี text/plain ให้ใช้ HTML แล้วลบ tags
+        if not body and html_body:
+            body = clean_html_tags(html_body)
 
         body = body.strip()
         if len(body) > max_length:

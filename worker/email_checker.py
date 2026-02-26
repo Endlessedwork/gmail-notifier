@@ -165,6 +165,8 @@ class EmailChecker:
             date_str = msg['Date'] or ''
             body = get_email_body(msg, self.max_body_length)
 
+            logger.debug(f"📧 Email parsed - Subject: {subject[:50]}, From: {sender[:50]}, Body length: {len(body)}")
+
             return {
                 'id': email_id,
                 'subject': subject,
