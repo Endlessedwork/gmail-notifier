@@ -44,7 +44,8 @@ class WorkerOrchestrator:
             for email_data in emails:
                 try:
                     self._process_email(email_data, rules, watcher)
-                    checker.mark_as_seen(email_data['id'])
+                    # ไม่ mark_as_seen เพื่อให้อีเมลยังคงเป็น UNSEEN ใน Gmail
+                    # checker.mark_as_seen(email_data['id'])
                 except Exception as e:
                     logger.error(f"Error processing email: {e}")
 
