@@ -3,6 +3,7 @@ Legacy API routes สำหรับ frontend ที่เรียก /api/conf
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+import json
 from backend.core.database import get_db
 from backend.core.auth import get_current_user
 from backend.models import User
@@ -10,6 +11,24 @@ from backend.services import ConfigSettingService, NotificationLogService, Filte
 from backend.schemas import FilterRuleResponse
 
 router = APIRouter(prefix="/api", tags=["Compat"])
+
+
+def _serialize_rule(rule) -> FilterRuleResponse:
+    """แปลง FilterRule model เป็น response (แปลง channel_ids จาก JSON string เป็น list)"""
+    rule_dict = {
+        "id": rule.id,
+        "gmail_account_id": rule.gmail_account_id,
+        "name": rule.name,
+        "field": rule.field,
+        "match_type": rule.match_type,
+        "match_value": rule.match_value,
+        "channel_ids": json.loads(rule.channel_ids) if isinstance(rule.channel_ids, str) else rule.channel_ids,
+        "priority": rule.priority,
+        "enabled": rule.enabled,
+        "created_at": rule.created_at,
+        "updated_at": rule.updated_at,
+    }
+    return FilterRuleResponse(**rule_dict)
 
 
 @router.get("/health")
@@ -61,4 +80,4 @@ def get_rules(
 ):
     """Rules - alias ไป filter-rules (user-scoped)"""
     rules, _ = FilterRuleService.get_all(db, skip=0, limit=1000, user_id=current_user.id)
-    return {"rules": [FilterRuleResponse.model_validate(r) for r in rules]}
+    return {"rules": [_serialize_rule(r) for r in rules]}
