@@ -18,5 +18,5 @@ class NotificationChannel(Base):
 
     # Relationships
     user = relationship("User", back_populates="notification_channels")
-    filter_rules = relationship("FilterRule", back_populates="channel", cascade="all, delete-orphan")
+    # filter_rules ใช้ channel_ids (JSON) แทนแล้ว ไม่มี foreign key relationship
     notification_logs = relationship("NotificationLog", back_populates="channel", cascade="all, delete-orphan")
