@@ -10,7 +10,10 @@ from backend.schemas import (
     NotificationChannelResponse,
     NotificationChannelList,
 )
+from pydantic import BaseModel
 import json
+import httpx
+from datetime import datetime
 
 router = APIRouter(
     prefix="/notification-channels", tags=["Notification Channels"]
@@ -118,4 +121,67 @@ def delete_notification_channel(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Notification channel {channel_id} not found",
+        )
+
+
+class WebhookTestRequest(BaseModel):
+    url: str
+    headers: dict = {}
+
+
+@router.post("/test/webhook")
+async def test_webhook(
+    test_data: WebhookTestRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    ทดสอบส่ง mock notification ไปยัง webhook URL
+    """
+    mock_payload = {
+        "event": "test",
+        "timestamp": datetime.utcnow().isoformat(),
+        "message": "🧪 Test notification from Gmail Notifier",
+        "data": {
+            "subject": "[TEST] ทดสอบ Webhook Notification",
+            "from": "test@example.com",
+            "date": datetime.utcnow().isoformat(),
+            "body": "นี่คือข้อความทดสอบจากระบบ Gmail Notifier เพื่อตรวจสอบว่า Webhook URL ของคุณทำงานได้ปกติ",
+        }
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            headers = {
+                "Content-Type": "application/json",
+                "User-Agent": "Gmail-Notifier/1.0",
+                **test_data.headers
+            }
+
+            response = await client.post(
+                test_data.url,
+                json=mock_payload,
+                headers=headers
+            )
+
+            return {
+                "success": True,
+                "status_code": response.status_code,
+                "response_text": response.text[:500],  # แค่ 500 ตัวอักษรแรก
+                "message": f"✅ ส่งสำเร็จ! (HTTP {response.status_code})"
+            }
+
+    except httpx.TimeoutException:
+        raise HTTPException(
+            status_code=status.HTTP_408_REQUEST_TIMEOUT,
+            detail="❌ Webhook timeout (เกิน 10 วินาที)"
+        )
+    except httpx.ConnectError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"❌ ไม่สามารถเชื่อมต่อ: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"❌ เกิดข้อผิดพลาด: {str(e)}"
         )

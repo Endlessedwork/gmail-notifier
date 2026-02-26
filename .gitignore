@@ -86,3 +86,4 @@ htmlcov/
 tmp/
 temp/
 *.tmp
+data/.encryption_key

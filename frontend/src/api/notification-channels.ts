@@ -24,4 +24,12 @@ export const notificationChannelsApi = {
 
   toggle: (id: number, enabled: boolean) =>
     apiClient.patch<NotificationChannel>(`/notification-channels/${id}`, { enabled }),
+
+  testWebhook: (data: { url: string; headers?: Record<string, string> }) =>
+    apiClient.post<{
+      success: boolean
+      status_code: number
+      response_text: string
+      message: string
+    }>('/notification-channels/test/webhook', data),
 }

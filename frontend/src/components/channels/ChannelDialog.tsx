@@ -18,8 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Wifi } from 'lucide-react'
 import { useCreateNotificationChannel, useUpdateNotificationChannel } from '@/hooks/useNotificationChannels'
+import { notificationChannelsApi } from '@/api'
+import { toast } from 'sonner'
 import type {
   NotificationChannel,
   ChannelType,
@@ -54,6 +56,7 @@ export function ChannelDialog({
   const createChannel = useCreateNotificationChannel()
   const updateChannel = useUpdateNotificationChannel()
 
+  const [testLoading, setTestLoading] = useState(false)
   const isLoading = createChannel.isPending || updateChannel.isPending
 
   useEffect(() => {
@@ -123,6 +126,28 @@ export function ChannelDialog({
       type: type as ChannelType,
       config: {},
     })
+  }
+
+  const handleTestWebhook = async () => {
+    if (!formData.config.url) {
+      toast.error('กรอก Webhook URL ก่อนทดสอบ')
+      return
+    }
+
+    setTestLoading(true)
+    try {
+      const result = await notificationChannelsApi.testWebhook({
+        url: formData.config.url,
+        headers: formData.config.headers || {}
+      })
+      toast.success(result.message || '✅ ส่งสำเร็จ!', {
+        description: `HTTP ${result.status_code}${result.response_text ? `: ${result.response_text.slice(0, 100)}` : ''}`
+      })
+    } catch (err: any) {
+      toast.error(err?.data?.detail || err?.message || '❌ ทดสอบล้มเหลว')
+    } finally {
+      setTestLoading(false)
+    }
   }
 
   return (
@@ -236,22 +261,45 @@ export function ChannelDialog({
 
           {/* Webhook Config */}
           {formData.type === 'webhook' && (
-            <div className="space-y-2">
-              <Label htmlFor="webhook_url">Webhook URL</Label>
-              <Input
-                id="webhook_url"
-                type="url"
-                placeholder="https://example.com/webhook"
-                value={formData.config.url || ''}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    config: { ...formData.config, url: e.target.value },
-                  })
-                }
-                required
-              />
-            </div>
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="webhook_url">Webhook URL</Label>
+                <Input
+                  id="webhook_url"
+                  type="url"
+                  placeholder="https://example.com/webhook"
+                  value={formData.config.url || ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      config: { ...formData.config, url: e.target.value },
+                    })
+                  }
+                  required
+                />
+              </div>
+
+              {/* Test Webhook */}
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label>ทดสอบ Webhook</Label>
+                  <p className="text-xs text-muted-foreground">
+                    ส่ง mock notification เพื่อทดสอบว่า URL ทำงานได้
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTestWebhook}
+                  disabled={testLoading || !formData.config.url}
+                >
+                  {testLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  <Wifi className="w-4 h-4 mr-2" />
+                  ทดสอบ
+                </Button>
+              </div>
+            </>
           )}
 
           {/* Enabled */}
