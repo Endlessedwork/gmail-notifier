@@ -34,6 +34,7 @@ export function GmailDialog({
     imap_server: 'imap.gmail.com',
     imap_port: 993,
     enabled: true,
+    sync_all_unseen: false,
   })
 
   const [testLoading, setTestLoading] = useState(false)
@@ -93,6 +94,7 @@ export function GmailDialog({
         imap_server: account.imap_server,
         imap_port: account.imap_port,
         enabled: account.enabled,
+        sync_all_unseen: account.sync_all_unseen || false,
       })
     } else {
       setFormData({
@@ -101,6 +103,7 @@ export function GmailDialog({
         imap_server: 'imap.gmail.com',
         imap_port: 993,
         enabled: true,
+        sync_all_unseen: false,
       })
     }
   }, [account, open])
@@ -114,6 +117,7 @@ export function GmailDialog({
         imap_server: formData.imap_server,
         imap_port: formData.imap_port,
         enabled: formData.enabled,
+        sync_all_unseen: formData.sync_all_unseen,
       }
       if (formData.password) {
         updateData.password = formData.password
@@ -271,6 +275,25 @@ export function GmailDialog({
               }
             />
           </div>
+
+          {/* Sync All Unseen */}
+          {!account && (
+            <div className="flex items-center justify-between border-t pt-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="sync_all_unseen">ดึงอีเมลย้อนหลัง</Label>
+                <p className="text-xs text-muted-foreground">
+                  เปิด = ดึงอีเมล UNSEEN ทั้งหมด | ปิด = เฉพาะวันนี้ (แนะนำ)
+                </p>
+              </div>
+              <Switch
+                id="sync_all_unseen"
+                checked={formData.sync_all_unseen}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, sync_all_unseen: checked })
+                }
+              />
+            </div>
+          )}
 
           <DialogFooter>
             <Button

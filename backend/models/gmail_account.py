@@ -14,6 +14,7 @@ class GmailAccount(Base):
     imap_server = Column(String, default="imap.gmail.com")
     imap_port = Column(Integer, default=993)
     enabled = Column(Boolean, default=True)
+    sync_all_unseen = Column(Boolean, default=False)  # True = sync ทั้งหมด, False = เฉพาะวันนี้
     last_checked_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

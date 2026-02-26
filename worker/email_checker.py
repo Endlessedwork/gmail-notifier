@@ -87,10 +87,16 @@ class EmailChecker:
                 search_criteria = f'(UNSEEN SINCE {check_date})'
                 logger.debug(f"Searching emails SINCE {check_date}")
             else:
-                # ครั้งแรก: ดึงเฉพาะอีเมลวันนี้เท่านั้น (ใช้ ON แทน SINCE)
-                today = datetime.now().strftime('%d-%b-%Y')
-                search_criteria = f'(UNSEEN ON {today})'
-                logger.info(f"First check - searching emails ON {today} only")
+                # ครั้งแรก: เช็คว่า user ต้องการ sync ทั้งหมดหรือไม่
+                if self.account.sync_all_unseen:
+                    # Sync อีเมล UNSEEN ทั้งหมด
+                    search_criteria = '(UNSEEN)'
+                    logger.info(f"First check - syncing ALL UNSEEN emails (user requested)")
+                else:
+                    # ดึงเฉพาะอีเมลวันนี้เท่านั้น (ใช้ ON แทน SINCE)
+                    today = datetime.now().strftime('%d-%b-%Y')
+                    search_criteria = f'(UNSEEN ON {today})'
+                    logger.info(f"First check - searching emails ON {today} only")
 
             status, messages = self.mail.search(None, search_criteria)
 

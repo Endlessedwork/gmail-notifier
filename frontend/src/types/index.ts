@@ -36,6 +36,7 @@ export interface GmailAccount {
   imap_server: string
   imap_port: number
   enabled: boolean
+  sync_all_unseen: boolean
   last_checked_at: string | null
   created_at: string
   updated_at: string
@@ -47,6 +48,7 @@ export interface GmailAccountCreate {
   imap_server?: string
   imap_port?: number
   enabled?: boolean
+  sync_all_unseen?: boolean
 }
 
 export interface GmailAccountUpdate {
@@ -55,6 +57,7 @@ export interface GmailAccountUpdate {
   imap_server?: string
   imap_port?: number
   enabled?: boolean
+  sync_all_unseen?: boolean
 }
 
 // Notification Channel Types

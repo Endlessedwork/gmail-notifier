@@ -107,6 +107,15 @@ def run_migrations():
                     cur.execute("ALTER TABLE users ADD COLUMN refresh_token TEXT")
                 except sqlite3.OperationalError:
                     pass
+        # เพิ่ม sync_all_unseen column ใน gmail_accounts
+        if has_gmail:
+            try:
+                cur.execute("PRAGMA table_info(gmail_accounts)")
+                cols = [r[1] for r in cur.fetchall()]
+                if "sync_all_unseen" not in cols:
+                    cur.execute("ALTER TABLE gmail_accounts ADD COLUMN sync_all_unseen BOOLEAN DEFAULT 0")
+            except sqlite3.OperationalError:
+                pass
         conn.commit()
         conn.close()
     except Exception as e:

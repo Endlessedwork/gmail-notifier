@@ -8,6 +8,10 @@ class GmailAccountBase(BaseModel):
     imap_server: str = "imap.gmail.com"
     imap_port: int = Field(default=993, ge=1, le=65535)
     enabled: bool = True
+    sync_all_unseen: bool = Field(
+        default=False,
+        description="True = sync อีเมล UNSEEN ทั้งหมด, False = เฉพาะวันนี้"
+    )
 
 
 class GmailAccountCreate(GmailAccountBase):
@@ -28,6 +32,7 @@ class GmailAccountUpdate(BaseModel):
     imap_server: Optional[str] = None
     imap_port: Optional[int] = Field(None, ge=1, le=65535)
     enabled: Optional[bool] = None
+    sync_all_unseen: Optional[bool] = None
 
 
 class GmailAccountResponse(GmailAccountBase):
