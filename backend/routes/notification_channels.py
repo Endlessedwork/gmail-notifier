@@ -129,6 +129,15 @@ class WebhookTestRequest(BaseModel):
     headers: dict = {}
 
 
+class TelegramTestRequest(BaseModel):
+    bot_token: str
+    chat_id: str
+
+
+class LineTestRequest(BaseModel):
+    access_token: str
+
+
 @router.post("/test/webhook")
 async def test_webhook(
     test_data: WebhookTestRequest,
@@ -180,6 +189,138 @@ async def test_webhook(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"❌ ไม่สามารถเชื่อมต่อ: {str(e)}"
         )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"❌ เกิดข้อผิดพลาด: {str(e)}"
+        )
+
+
+@router.post("/test/telegram")
+async def test_telegram(
+    test_data: TelegramTestRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    ทดสอบส่ง mock notification ไปยัง Telegram
+    """
+    message = """🧪 *Test Notification from Gmail Notifier*
+
+📧 *Subject:* [TEST] ทดสอบ Telegram Notification
+👤 *From:* test@example.com
+📅 *Date:* {}
+
+📝 *Message:*
+นี่คือข้อความทดสอบจากระบบ Gmail Notifier เพื่อตรวจสอบว่า Telegram Bot ของคุณทำงานได้ปกติ
+""".format(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            url = f"https://api.telegram.org/bot{test_data.bot_token}/sendMessage"
+
+            response = await client.post(
+                url,
+                json={
+                    "chat_id": test_data.chat_id,
+                    "text": message,
+                    "parse_mode": "Markdown"
+                }
+            )
+
+            result = response.json()
+
+            if response.status_code == 200 and result.get("ok"):
+                return {
+                    "success": True,
+                    "status_code": response.status_code,
+                    "message": "✅ ส่งสำเร็จ! ตรวจสอบ Telegram ของคุณ"
+                }
+            else:
+                error_desc = result.get("description", "Unknown error")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"❌ Telegram API Error: {error_desc}"
+                )
+
+    except httpx.TimeoutException:
+        raise HTTPException(
+            status_code=status.HTTP_408_REQUEST_TIMEOUT,
+            detail="❌ Telegram timeout (เกิน 10 วินาที)"
+        )
+    except httpx.ConnectError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"❌ ไม่สามารถเชื่อมต่อ Telegram API: {str(e)}"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"❌ เกิดข้อผิดพลาด: {str(e)}"
+        )
+
+
+@router.post("/test/line")
+async def test_line(
+    test_data: LineTestRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    ทดสอบส่ง mock notification ไปยัง LINE Notify
+    """
+    message = """
+🧪 Test Notification from Gmail Notifier
+
+📧 Subject: [TEST] ทดสอบ LINE Notification
+👤 From: test@example.com
+📅 Date: {}
+
+📝 Message:
+นี่คือข้อความทดสอบจากระบบ Gmail Notifier เพื่อตรวจสอบว่า LINE Notify ของคุณทำงานได้ปกติ
+""".format(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            url = "https://notify-api.line.me/api/notify"
+
+            headers = {
+                "Authorization": f"Bearer {test_data.access_token}",
+            }
+
+            response = await client.post(
+                url,
+                headers=headers,
+                data={"message": message}
+            )
+
+            result = response.json()
+
+            if response.status_code == 200 and result.get("status") == 200:
+                return {
+                    "success": True,
+                    "status_code": response.status_code,
+                    "message": "✅ ส่งสำเร็จ! ตรวจสอบ LINE ของคุณ"
+                }
+            else:
+                error_msg = result.get("message", "Unknown error")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"❌ LINE Notify Error: {error_msg}"
+                )
+
+    except httpx.TimeoutException:
+        raise HTTPException(
+            status_code=status.HTTP_408_REQUEST_TIMEOUT,
+            detail="❌ LINE Notify timeout (เกิน 10 วินาที)"
+        )
+    except httpx.ConnectError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"❌ ไม่สามารถเชื่อมต่อ LINE Notify API: {str(e)}"
+        )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -32,4 +32,18 @@ export const notificationChannelsApi = {
       response_text: string
       message: string
     }>('/notification-channels/test/webhook', data),
+
+  testTelegram: (data: { bot_token: string; chat_id: string }) =>
+    apiClient.post<{
+      success: boolean
+      status_code: number
+      message: string
+    }>('/notification-channels/test/telegram', data),
+
+  testLine: (data: { access_token: string }) =>
+    apiClient.post<{
+      success: boolean
+      status_code: number
+      message: string
+    }>('/notification-channels/test/line', data),
 }

@@ -150,6 +150,49 @@ export function ChannelDialog({
     }
   }
 
+  const handleTestTelegram = async () => {
+    if (!formData.config.bot_token || !formData.config.chat_id) {
+      toast.error('กรอก Bot Token และ Chat ID ก่อนทดสอบ')
+      return
+    }
+
+    setTestLoading(true)
+    try {
+      const result = await notificationChannelsApi.testTelegram({
+        bot_token: formData.config.bot_token,
+        chat_id: formData.config.chat_id
+      })
+      toast.success(result.message || '✅ ส่งสำเร็จ!', {
+        description: 'ตรวจสอบ Telegram ของคุณ'
+      })
+    } catch (err: any) {
+      toast.error(err?.data?.detail || err?.message || '❌ ทดสอบล้มเหลว')
+    } finally {
+      setTestLoading(false)
+    }
+  }
+
+  const handleTestLine = async () => {
+    if (!formData.config.access_token) {
+      toast.error('กรอก Access Token ก่อนทดสอบ')
+      return
+    }
+
+    setTestLoading(true)
+    try {
+      const result = await notificationChannelsApi.testLine({
+        access_token: formData.config.access_token
+      })
+      toast.success(result.message || '✅ ส่งสำเร็จ!', {
+        description: 'ตรวจสอบ LINE ของคุณ'
+      })
+    } catch (err: any) {
+      toast.error(err?.data?.detail || err?.message || '❌ ทดสอบล้มเหลว')
+    } finally {
+      setTestLoading(false)
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -233,30 +276,74 @@ export function ChannelDialog({
                   required
                 />
               </div>
+
+              {/* Test Telegram */}
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label>ทดสอบ Telegram</Label>
+                  <p className="text-xs text-muted-foreground">
+                    ส่ง mock notification เพื่อทดสอบว่า Bot ทำงานได้
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTestTelegram}
+                  disabled={testLoading || !formData.config.bot_token || !formData.config.chat_id}
+                >
+                  {testLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  <Wifi className="w-4 h-4 mr-2" />
+                  ทดสอบ
+                </Button>
+              </div>
             </>
           )}
 
           {/* LINE Config */}
           {formData.type === 'line' && (
-            <div className="space-y-2">
-              <Label htmlFor="access_token">LINE Notify Access Token</Label>
-              <Input
-                id="access_token"
-                type="text"
-                placeholder="LINE Notify Token"
-                value={formData.config.access_token || ''}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    config: { ...formData.config, access_token: e.target.value },
-                  })
-                }
-                required
-              />
-              <p className="text-xs text-muted-foreground">
-                รับ Token จาก notify-bot.line.me
-              </p>
-            </div>
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="access_token">LINE Notify Access Token</Label>
+                <Input
+                  id="access_token"
+                  type="text"
+                  placeholder="LINE Notify Token"
+                  value={formData.config.access_token || ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      config: { ...formData.config, access_token: e.target.value },
+                    })
+                  }
+                  required
+                />
+                <p className="text-xs text-muted-foreground">
+                  รับ Token จาก notify-bot.line.me
+                </p>
+              </div>
+
+              {/* Test LINE */}
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <Label>ทดสอบ LINE Notify</Label>
+                  <p className="text-xs text-muted-foreground">
+                    ส่ง mock notification เพื่อทดสอบว่า Token ทำงานได้
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTestLine}
+                  disabled={testLoading || !formData.config.access_token}
+                >
+                  {testLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  <Wifi className="w-4 h-4 mr-2" />
+                  ทดสอบ
+                </Button>
+              </div>
+            </>
           )}
 
           {/* Webhook Config */}
