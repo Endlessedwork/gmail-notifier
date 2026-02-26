@@ -87,10 +87,10 @@ class EmailChecker:
                 search_criteria = f'(UNSEEN SINCE {check_date})'
                 logger.debug(f"Searching emails SINCE {check_date}")
             else:
-                # ครั้งแรก: ดึงเฉพาะอีเมลวันนี้เท่านั้น
+                # ครั้งแรก: ดึงเฉพาะอีเมลวันนี้เท่านั้น (ใช้ ON แทน SINCE)
                 today = datetime.now().strftime('%d-%b-%Y')
-                search_criteria = f'(UNSEEN SINCE {today})'
-                logger.info(f"First check - searching emails from today ({today}) only")
+                search_criteria = f'(UNSEEN ON {today})'
+                logger.info(f"First check - searching emails ON {today} only")
 
             status, messages = self.mail.search(None, search_criteria)
 

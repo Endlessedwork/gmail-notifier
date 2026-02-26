@@ -4,6 +4,8 @@ Legacy API routes สำหรับ frontend ที่เรียก /api/conf
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from backend.core.database import get_db
+from backend.core.auth import get_current_user
+from backend.models import User
 from backend.services import ConfigSettingService, NotificationLogService, FilterRuleService
 from backend.schemas import FilterRuleResponse
 
@@ -38,9 +40,12 @@ def get_config(db: Session = Depends(get_db)):
 
 
 @router.get("/metrics")
-def get_metrics(db: Session = Depends(get_db)):
-    """Metrics - แปลงจาก notification-logs stats"""
-    stats = NotificationLogService.get_stats(db)
+def get_metrics(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Metrics - แปลงจาก notification-logs stats (user-scoped)"""
+    stats = NotificationLogService.get_stats(db, user_id=current_user.id)
     return {
         "total_emails_processed": stats.get("total", 0),
         "total_notifications_sent": stats.get("sent", 0),
@@ -50,7 +55,10 @@ def get_metrics(db: Session = Depends(get_db)):
 
 
 @router.get("/rules")
-def get_rules(db: Session = Depends(get_db)):
-    """Rules - alias ไป filter-rules"""
-    rules, _ = FilterRuleService.get_all(db, skip=0, limit=1000)
+def get_rules(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Rules - alias ไป filter-rules (user-scoped)"""
+    rules, _ = FilterRuleService.get_all(db, skip=0, limit=1000, user_id=current_user.id)
     return {"rules": [FilterRuleResponse.model_validate(r) for r in rules]}
