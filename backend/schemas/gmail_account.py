@@ -1,6 +1,9 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Literal
+
+
+SyncMode = Literal["new_only", "today", "all_unseen"]
 
 
 class GmailAccountBase(BaseModel):
@@ -8,9 +11,9 @@ class GmailAccountBase(BaseModel):
     imap_server: str = "imap.gmail.com"
     imap_port: int = Field(default=993, ge=1, le=65535)
     enabled: bool = True
-    sync_all_unseen: bool = Field(
-        default=False,
-        description="True = sync อีเมล UNSEEN ทั้งหมด, False = เฉพาะวันนี้"
+    sync_mode: SyncMode = Field(
+        default="new_only",
+        description="new_only = หลังจากเปิดใช้งาน, today = วันนี้, all_unseen = ทั้งหมด"
     )
 
 
@@ -32,7 +35,7 @@ class GmailAccountUpdate(BaseModel):
     imap_server: Optional[str] = None
     imap_port: Optional[int] = Field(None, ge=1, le=65535)
     enabled: Optional[bool] = None
-    sync_all_unseen: Optional[bool] = None
+    sync_mode: Optional[SyncMode] = None
 
 
 class GmailAccountResponse(GmailAccountBase):

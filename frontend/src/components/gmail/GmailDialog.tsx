@@ -11,11 +11,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Loader2, Wifi, Eye, EyeOff } from 'lucide-react'
 import { useCreateGmailAccount, useUpdateGmailAccount } from '@/hooks/useGmailAccounts'
 import { gmailAccountsApi } from '@/api'
 import { toast } from 'sonner'
-import type { GmailAccount } from '@/types'
+import type { GmailAccount, SyncMode } from '@/types'
 
 interface GmailDialogProps {
   open: boolean
@@ -34,7 +35,7 @@ export function GmailDialog({
     imap_server: 'imap.gmail.com',
     imap_port: 993,
     enabled: true,
-    sync_all_unseen: false,
+    sync_mode: 'new_only' as SyncMode,
   })
 
   const [testLoading, setTestLoading] = useState(false)
@@ -94,7 +95,7 @@ export function GmailDialog({
         imap_server: account.imap_server,
         imap_port: account.imap_port,
         enabled: account.enabled,
-        sync_all_unseen: account.sync_all_unseen || false,
+        sync_mode: account.sync_mode || 'new_only',
       })
     } else {
       setFormData({
@@ -103,7 +104,7 @@ export function GmailDialog({
         imap_server: 'imap.gmail.com',
         imap_port: 993,
         enabled: true,
-        sync_all_unseen: false,
+        sync_mode: 'new_only',
       })
     }
   }, [account, open])
@@ -117,7 +118,7 @@ export function GmailDialog({
         imap_server: formData.imap_server,
         imap_port: formData.imap_port,
         enabled: formData.enabled,
-        sync_all_unseen: formData.sync_all_unseen,
+        sync_mode: formData.sync_mode,
       }
       if (formData.password) {
         updateData.password = formData.password
@@ -276,22 +277,40 @@ export function GmailDialog({
             />
           </div>
 
-          {/* Sync All Unseen */}
+          {/* Sync Mode */}
           {!account && (
-            <div className="flex items-center justify-between border-t pt-4">
+            <div className="space-y-3 border-t pt-4">
               <div className="space-y-0.5">
-                <Label htmlFor="sync_all_unseen">ดึงอีเมลย้อนหลัง</Label>
+                <Label>ดึงอีเมลครั้งแรก</Label>
                 <p className="text-xs text-muted-foreground">
-                  เปิด = ดึงอีเมล UNSEEN ทั้งหมด | ปิด = เฉพาะวันนี้ (แนะนำ)
+                  เลือกว่าจะดึงอีเมลย้อนหลังหรือไม่ตอนเริ่มใช้งาน
                 </p>
               </div>
-              <Switch
-                id="sync_all_unseen"
-                checked={formData.sync_all_unseen}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, sync_all_unseen: checked })
+              <RadioGroup
+                value={formData.sync_mode}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, sync_mode: value as SyncMode })
                 }
-              />
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="new_only" id="new_only" />
+                  <Label htmlFor="new_only" className="font-normal cursor-pointer">
+                    เฉพาะอีเมลใหม่ (หลังจากเปิดใช้งาน) - แนะนำ ✨
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="today" id="today" />
+                  <Label htmlFor="today" className="font-normal cursor-pointer">
+                    อีเมลวันนี้ (UNSEEN ของวันนี้เท่านั้น)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="all_unseen" id="all_unseen" />
+                  <Label htmlFor="all_unseen" className="font-normal cursor-pointer">
+                    ทั้งหมด (UNSEEN ย้อนหลังทุกฉบับ)
+                  </Label>
+                </div>
+              </RadioGroup>
             </div>
           )}
 

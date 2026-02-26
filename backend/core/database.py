@@ -107,13 +107,21 @@ def run_migrations():
                     cur.execute("ALTER TABLE users ADD COLUMN refresh_token TEXT")
                 except sqlite3.OperationalError:
                     pass
-        # เพิ่ม sync_all_unseen column ใน gmail_accounts
+        # เพิ่ม sync_mode column ใน gmail_accounts (แทน sync_all_unseen)
         if has_gmail:
             try:
                 cur.execute("PRAGMA table_info(gmail_accounts)")
                 cols = [r[1] for r in cur.fetchall()]
-                if "sync_all_unseen" not in cols:
-                    cur.execute("ALTER TABLE gmail_accounts ADD COLUMN sync_all_unseen BOOLEAN DEFAULT 0")
+
+                # ลบ sync_all_unseen ถ้ามี (migration เก่า)
+                if "sync_all_unseen" in cols:
+                    # SQLite ไม่รองรับ DROP COLUMN โดยตรง แต่เราไม่ต้องลบ
+                    # แค่ไม่ใช้มันแล้วก็พอ (จะ ignore ได้)
+                    pass
+
+                # เพิ่ม sync_mode
+                if "sync_mode" not in cols:
+                    cur.execute("ALTER TABLE gmail_accounts ADD COLUMN sync_mode TEXT DEFAULT 'new_only'")
             except sqlite3.OperationalError:
                 pass
         conn.commit()

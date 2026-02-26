@@ -87,16 +87,27 @@ class EmailChecker:
                 search_criteria = f'(UNSEEN SINCE {check_date})'
                 logger.debug(f"Searching emails SINCE {check_date}")
             else:
-                # ครั้งแรก: เช็คว่า user ต้องการ sync ทั้งหมดหรือไม่
-                if self.account.sync_all_unseen:
+                # ครั้งแรก: เช็คตาม sync_mode ที่ user เลือก
+                sync_mode = getattr(self.account, 'sync_mode', 'new_only')
+
+                if sync_mode == 'all_unseen':
                     # Sync อีเมล UNSEEN ทั้งหมด
                     search_criteria = '(UNSEEN)'
-                    logger.info(f"First check - syncing ALL UNSEEN emails (user requested)")
-                else:
-                    # ดึงเฉพาะอีเมลวันนี้เท่านั้น (ใช้ ON แทน SINCE)
+                    logger.info(f"First check - syncing ALL UNSEEN emails (mode: all_unseen)")
+                elif sync_mode == 'today':
+                    # ดึงเฉพาะอีเมลวันนี้เท่านั้น
                     today = datetime.now().strftime('%d-%b-%Y')
                     search_criteria = f'(UNSEEN ON {today})'
-                    logger.info(f"First check - searching emails ON {today} only")
+                    logger.info(f"First check - searching emails ON {today} only (mode: today)")
+                else:  # 'new_only'
+                    # ไม่ดึงเลย - รอแค่อีเมลใหม่ที่จะมาหลังจากนี้
+                    search_criteria = None
+                    logger.info(f"First check - skipping (mode: new_only, waiting for new emails only)")
+
+            # ถ้า search_criteria = None (mode: new_only ครั้งแรก) ให้ข้ามไป
+            if search_criteria is None:
+                # อัพเดท last_checked_at แล้วข้ามไป (ครั้งหน้าจะดึงแค่อีเมลใหม่)
+                return []
 
             status, messages = self.mail.search(None, search_criteria)
 

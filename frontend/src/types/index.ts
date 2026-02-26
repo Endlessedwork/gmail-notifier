@@ -30,13 +30,15 @@ export interface TokenResponse {
 }
 
 // Gmail Account Types
+export type SyncMode = 'new_only' | 'today' | 'all_unseen'
+
 export interface GmailAccount {
   id: number
   email: string
   imap_server: string
   imap_port: number
   enabled: boolean
-  sync_all_unseen: boolean
+  sync_mode: SyncMode
   last_checked_at: string | null
   created_at: string
   updated_at: string
@@ -48,7 +50,7 @@ export interface GmailAccountCreate {
   imap_server?: string
   imap_port?: number
   enabled?: boolean
-  sync_all_unseen?: boolean
+  sync_mode?: SyncMode
 }
 
 export interface GmailAccountUpdate {
@@ -57,7 +59,7 @@ export interface GmailAccountUpdate {
   imap_server?: string
   imap_port?: number
   enabled?: boolean
-  sync_all_unseen?: boolean
+  sync_mode?: SyncMode
 }
 
 // Notification Channel Types
