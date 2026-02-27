@@ -7,6 +7,7 @@ import {
   FileText,
   Webhook,
   Settings as SettingsIcon,
+  Activity,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -16,6 +17,7 @@ const navigation = [
   { name: 'Notification Channels', href: '/channels', icon: Bell },
   { name: 'Filter Rules', href: '/filters', icon: Filter },
   { name: 'Logs', href: '/logs', icon: FileText },
+  { name: 'Worker Status', href: '/worker-status', icon: Activity },
   { name: 'Webhook Guide', href: '/webhook-guide', icon: Webhook },
   { name: 'Settings', href: '/settings', icon: SettingsIcon },
 ]

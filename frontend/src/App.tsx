@@ -15,6 +15,7 @@ import { FilterManagement } from './components/filters/FilterManagement'
 import { LogsPage } from './components/activity/LogsPage'
 import { WebhookGuidePage } from './components/guide/WebhookGuidePage'
 import { Settings } from './components/settings/Settings'
+import { WorkerStatus } from './components/debug/WorkerStatus'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,6 +51,7 @@ function AppContent() {
           <Route path="filters" element={<FilterManagement />} />
           <Route path="logs" element={<LogsPage />} />
           <Route path="webhook-guide" element={<WebhookGuidePage />} />
+          <Route path="worker-status" element={<WorkerStatus />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 
