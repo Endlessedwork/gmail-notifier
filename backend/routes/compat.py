@@ -65,9 +65,8 @@ def get_config(db: Session = Depends(get_db)):
 def update_config(
     config_data: dict,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
-    """Update config settings - บันทึกลง config_settings table"""
+    """Update config settings - บันทึกลง config_settings table (ไม่ต้อง auth สำหรับ legacy compatibility)"""
     if "settings" not in config_data:
         raise HTTPException(status_code=400, detail="Missing 'settings' field")
 
