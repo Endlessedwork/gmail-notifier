@@ -1,7 +1,7 @@
 """
 Legacy API routes สำหรับ frontend ที่เรียก /api/config, /api/metrics, /api/rules, /api/health
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import json
 import os
@@ -58,6 +58,29 @@ def get_config(db: Session = Depends(get_db)):
             "default_chat_id": get("default_chat_id", ""),
             "log_level": get("log_level", "INFO"),
         }
+    }
+
+
+@router.put("/config")
+def update_config(
+    config_data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update config settings - บันทึกลง config_settings table"""
+    if "settings" not in config_data:
+        raise HTTPException(status_code=400, detail="Missing 'settings' field")
+
+    settings = config_data["settings"]
+
+    # บันทึกแต่ละ setting
+    for key, value in settings.items():
+        ConfigSettingService.set_value(db, key, str(value))
+
+    # Return ข้อมูลที่อัพเดทแล้ว
+    return {
+        "message": "Config updated successfully",
+        "settings": settings
     }
 
 
