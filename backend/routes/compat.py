@@ -4,9 +4,12 @@ Legacy API routes สำหรับ frontend ที่เรียก /api/conf
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 import json
+import os
+import subprocess
+from datetime import datetime
 from backend.core.database import get_db
 from backend.core.auth import get_current_user
-from backend.models import User
+from backend.models import User, GmailAccount
 from backend.services import ConfigSettingService, NotificationLogService, FilterRuleService
 from backend.schemas import FilterRuleResponse
 
@@ -81,3 +84,98 @@ def get_rules(
     """Rules - alias ไป filter-rules (user-scoped)"""
     rules, _ = FilterRuleService.get_all(db, skip=0, limit=1000, user_id=current_user.id)
     return {"rules": [_serialize_rule(r) for r in rules]}
+
+
+@router.get("/worker-status")
+def get_worker_status(db: Session = Depends(get_db)):
+    """ตรวจสอบสถานะ worker และ Gmail accounts"""
+    status = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "worker": {
+            "running": False,
+            "process_id": None,
+            "check_method": None
+        },
+        "gmail_accounts": {
+            "total": 0,
+            "enabled": 0,
+            "last_checked": None,
+            "accounts": []
+        },
+        "database": {
+            "path": None,
+            "notification_logs_count": 0
+        },
+        "environment": {
+            "check_interval": os.environ.get("CHECK_INTERVAL", "60"),
+            "database_url": os.environ.get("DATABASE_URL", "not set")
+        }
+    }
+
+    # เช็ค worker process
+    try:
+        # วิธีที่ 1: เช็คจาก supervisorctl (ใน Docker)
+        result = subprocess.run(
+            ["supervisorctl", "status", "worker"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if result.returncode == 0 and "RUNNING" in result.stdout:
+            status["worker"]["running"] = True
+            status["worker"]["check_method"] = "supervisorctl"
+            # ดึง PID จาก output
+            parts = result.stdout.split()
+            if "pid" in result.stdout:
+                pid_idx = parts.index("pid") + 1
+                if pid_idx < len(parts):
+                    status["worker"]["process_id"] = parts[pid_idx].rstrip(",")
+    except Exception as e:
+        # ถ้าไม่มี supervisorctl ให้เช็คจาก ps
+        try:
+            result = subprocess.run(
+                ["ps", "aux"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            for line in result.stdout.split("\n"):
+                if "worker.main" in line or "worker/main.py" in line:
+                    status["worker"]["running"] = True
+                    status["worker"]["check_method"] = "ps"
+                    # ดึง PID (column ที่ 2)
+                    parts = line.split()
+                    if len(parts) > 1:
+                        status["worker"]["process_id"] = parts[1]
+                    break
+        except Exception as ps_error:
+            status["worker"]["check_method"] = f"error: {str(e)}, {str(ps_error)}"
+
+    # เช็ค Gmail accounts
+    accounts = db.query(GmailAccount).all()
+    status["gmail_accounts"]["total"] = len(accounts)
+    status["gmail_accounts"]["enabled"] = len([a for a in accounts if a.enabled])
+
+    for acc in accounts:
+        status["gmail_accounts"]["accounts"].append({
+            "id": acc.id,
+            "email": acc.email,
+            "enabled": acc.enabled,
+            "last_checked_at": acc.last_checked_at.isoformat() if acc.last_checked_at else None,
+            "sync_mode": acc.sync_mode
+        })
+
+        # หา last_checked ที่ล่าสุด
+        if acc.last_checked_at:
+            if not status["gmail_accounts"]["last_checked"] or acc.last_checked_at > datetime.fromisoformat(status["gmail_accounts"]["last_checked"]):
+                status["gmail_accounts"]["last_checked"] = acc.last_checked_at.isoformat()
+
+    # เช็ค notification logs
+    logs_count = NotificationLogService._user_scoped_query(db, user_id=None).count()
+    status["database"]["notification_logs_count"] = logs_count
+
+    # Database path
+    from backend.core.database import DATABASE_URL
+    status["database"]["path"] = DATABASE_URL
+
+    return status
