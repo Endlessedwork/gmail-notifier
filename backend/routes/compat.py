@@ -87,10 +87,9 @@ def update_config(
 @router.get("/metrics")
 def get_metrics(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
-    """Metrics - แปลงจาก notification-logs stats (user-scoped)"""
-    stats = NotificationLogService.get_stats(db, user_id=current_user.id)
+    """Metrics - แปลงจาก notification-logs stats (ไม่ต้อง auth สำหรับ legacy compatibility)"""
+    stats = NotificationLogService.get_stats(db, user_id=None)
     return {
         "total_emails_processed": stats.get("total", 0),
         "total_notifications_sent": stats.get("sent", 0),
@@ -102,10 +101,9 @@ def get_metrics(
 @router.get("/rules")
 def get_rules(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
-    """Rules - alias ไป filter-rules (user-scoped)"""
-    rules, _ = FilterRuleService.get_all(db, skip=0, limit=1000, user_id=current_user.id)
+    """Rules - alias ไป filter-rules (ไม่ต้อง auth สำหรับ legacy compatibility)"""
+    rules, _ = FilterRuleService.get_all(db, skip=0, limit=1000, user_id=None)
     return {"rules": [_serialize_rule(r) for r in rules]}
 
 
