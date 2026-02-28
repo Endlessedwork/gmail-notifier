@@ -38,7 +38,7 @@ export function Settings() {
         imap_server: config.settings.imap_server || 'imap.gmail.com',
         imap_port: config.settings.imap_port || 993,
         check_interval: config.settings.check_interval || 60,
-        max_body_length: config.settings.max_body_length || 300,
+        max_body_length: config.settings.max_body_length ?? 300,
         default_chat_id: config.settings.default_chat_id || '',
         log_level: config.settings.log_level || 'INFO',
       })
@@ -69,7 +69,7 @@ export function Settings() {
         imap_server: config.settings.imap_server || 'imap.gmail.com',
         imap_port: config.settings.imap_port || 993,
         check_interval: config.settings.check_interval || 60,
-        max_body_length: config.settings.max_body_length || 300,
+        max_body_length: config.settings.max_body_length ?? 300,
         default_chat_id: config.settings.default_chat_id || '',
         log_level: config.settings.log_level || 'INFO',
       })
@@ -156,15 +156,15 @@ export function Settings() {
               <Input
                 id="max_body_length"
                 type="number"
-                min="100"
-                max="4000"
+                min="0"
+                max="5000"
                 value={formData.max_body_length}
                 onChange={(e) =>
                   setFormData({ ...formData, max_body_length: parseInt(e.target.value) })
                 }
               />
               <p className="text-xs text-muted-foreground">
-                ความยาวสูงสุดของเนื้อหาอีเมลที่จะส่ง
+                ความยาวสูงสุดของเนื้อหาอีเมลที่จะส่ง (0 = ส่งเนื้อหาทั้งหมด)
               </p>
             </div>
           </div>
