@@ -109,6 +109,8 @@ class NotificationSender:
 
         if body:
             clean_body = clean_html_tags(body)
+            if len(clean_body) > 3500:
+                clean_body = clean_body[:3500] + "..."
             text += f"\n<b>Preview:</b>\n<pre>{html.escape(clean_body)}</pre>"
 
         try:
@@ -162,6 +164,8 @@ class NotificationSender:
 
         if body:
             clean_body = clean_html_tags(body)
+            if len(clean_body) > 700:
+                clean_body = clean_body[:700] + "..."
             message += f"\nPreview:\n{clean_body}"
 
         try:
