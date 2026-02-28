@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 
@@ -20,6 +20,7 @@ export function Layout() {
         {/* Mobile/Tablet Drawer */}
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent side="left" className="p-0 w-64 lg:hidden">
+            <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
             <Sidebar onNavigate={() => setSidebarOpen(false)} />
           </SheetContent>
         </Sheet>
