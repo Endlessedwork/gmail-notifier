@@ -4,8 +4,10 @@ Database configuration watcher
 """
 
 import logging
+import os
 from typing import List, Dict
 from datetime import datetime
+import pytz
 
 from sqlalchemy.orm import Session
 from backend.models import (
@@ -26,7 +28,9 @@ class ConfigWatcher:
             db: Database session
         """
         self.db = db
-        self._last_check = datetime.utcnow()
+        tz_name = os.getenv('TZ', 'UTC')
+        self.timezone = pytz.timezone(tz_name)
+        self._last_check = datetime.now(self.timezone)
 
     def get_active_accounts(self) -> List[GmailAccount]:
         """
@@ -177,7 +181,7 @@ class ConfigWatcher:
                     f"channels={updated_channels}, "
                     f"rules={updated_rules}"
                 )
-                self._last_check = datetime.utcnow()
+                self._last_check = datetime.now(self.timezone)
 
             return has_changed
 
@@ -200,7 +204,7 @@ class ConfigWatcher:
             )
 
             if account:
-                account.last_checked_at = datetime.utcnow()
+                account.last_checked_at = datetime.now(self.timezone)
                 self.db.commit()
                 logger.debug(f"Updated last_checked_at for account {account_id}")
 

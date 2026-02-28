@@ -29,29 +29,32 @@ class WorkerOrchestrator:
         """ประมวลผลอีเมลสำหรับ 1 account"""
         logger.info(f"📧 Checking {account.email}...")
 
-        rules = watcher.get_filter_rules(account.id)
-        if not rules:
-            logger.warning(f"⚠️ No filter rules for {account.email}")
-            return
-
-        with EmailChecker(account, max_body_length=self.max_body_length) as checker:
-            if not checker.mail:
-                logger.error(f"❌ Failed to connect to {account.email}")
+        # อัพเดท last_checked_at เสมอ (แม้ไม่มี rules) เพื่อให้รู้ว่า worker ทำงาน
+        try:
+            rules = watcher.get_filter_rules(account.id)
+            if not rules:
+                logger.warning(f"⚠️ No filter rules for {account.email}")
                 return
 
-            emails = checker.check_new_emails()
-            if not emails:
-                return
+            with EmailChecker(account, max_body_length=self.max_body_length) as checker:
+                if not checker.mail:
+                    logger.error(f"❌ Failed to connect to {account.email}")
+                    return
 
-            for email_data in emails:
-                try:
-                    self._process_email(email_data, rules, watcher)
-                    # ไม่ mark_as_seen เพื่อให้อีเมลยังคงเป็น UNSEEN ใน Gmail
-                    # checker.mark_as_seen(email_data['id'])
-                except Exception as e:
-                    logger.error(f"Error processing email: {e}")
+                emails = checker.check_new_emails()
+                if not emails:
+                    return
 
-        watcher.update_account_last_checked(account.id)
+                for email_data in emails:
+                    try:
+                        self._process_email(email_data, rules, watcher)
+                        # ไม่ mark_as_seen เพื่อให้อีเมลยังคงเป็น UNSEEN ใน Gmail
+                        # checker.mark_as_seen(email_data['id'])
+                    except Exception as e:
+                        logger.error(f"Error processing email: {e}")
+        finally:
+            # อัพเดท last_checked_at ไม่ว่าจะสำเร็จหรือไม่ก็ตาม
+            watcher.update_account_last_checked(account.id)
 
     def _process_email(self, email_data: Dict, rules: List, watcher: ConfigWatcher):
         subject = email_data.get('subject', '')

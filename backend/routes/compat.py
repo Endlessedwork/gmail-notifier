@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 import json
 import os
 import subprocess
-from datetime import datetime
+from datetime import datetime, timedelta
 from backend.core.database import get_db
 from backend.core.auth import get_current_user
 from backend.models import User, GmailAccount
@@ -170,6 +170,19 @@ def get_worker_status(db: Session = Depends(get_db)):
                     break
         except Exception as ps_error:
             status["worker"]["check_method"] = f"error: {str(e)}, {str(ps_error)}"
+
+    # เช็คจาก last_checked_at ของ accounts (fallback method)
+    # ถ้า account มี last_checked_at ภายใน 5 นาที แสดงว่า worker กำลังทำงาน
+    if not status["worker"]["running"]:
+        five_minutes_ago = datetime.utcnow() - timedelta(minutes=5)
+        recent_check = db.query(GmailAccount).filter(
+            GmailAccount.last_checked_at >= five_minutes_ago
+        ).first()
+
+        if recent_check:
+            status["worker"]["running"] = True
+            status["worker"]["check_method"] = "last_checked_at"
+            status["worker"]["last_activity"] = recent_check.last_checked_at.isoformat()
 
     # เช็ค Gmail accounts
     accounts = db.query(GmailAccount).all()
