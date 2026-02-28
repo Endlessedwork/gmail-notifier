@@ -21,8 +21,9 @@ logger = logging.getLogger(__name__)
 class WorkerOrchestrator:
     """Orchestrate email checking and notification sending"""
 
-    def __init__(self, check_interval: int = 60):
+    def __init__(self, check_interval: int = 60, max_body_length: int = 300):
         self.check_interval = check_interval
+        self.max_body_length = max_body_length
 
     def process_account(self, account, watcher: ConfigWatcher):
         """ประมวลผลอีเมลสำหรับ 1 account"""
@@ -33,7 +34,7 @@ class WorkerOrchestrator:
             logger.warning(f"⚠️ No filter rules for {account.email}")
             return
 
-        with EmailChecker(account) as checker:
+        with EmailChecker(account, max_body_length=self.max_body_length) as checker:
             if not checker.mail:
                 logger.error(f"❌ Failed to connect to {account.email}")
                 return

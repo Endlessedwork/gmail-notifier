@@ -35,12 +35,23 @@ signal.signal(signal.SIGTERM, signal_handler)
 
 def _run_loop(orchestrator: WorkerOrchestrator):
     """Main worker loop"""
+    from backend.services import ConfigSettingService
+
     logger.info("🚀 Gmail Notifier Worker started")
     logger.info(f"⏱️  Check interval: {orchestrator.check_interval}s")
 
     while running:
         try:
             with get_db_context() as db:
+                # อ่าน max_body_length จาก database ทุกรอบ (เผื่อ user แก้ไขตอน worker รันอยู่)
+                try:
+                    max_body_length = ConfigSettingService.get_int(db, 'max_body_length', 300)
+                    if max_body_length != orchestrator.max_body_length:
+                        logger.info(f"📏 Max body length updated: {orchestrator.max_body_length} → {max_body_length}")
+                        orchestrator.max_body_length = max_body_length
+                except Exception as e:
+                    logger.debug(f"Failed to read max_body_length: {e}")
+
                 watcher = ConfigWatcher(db)
                 accounts = watcher.get_active_accounts()
                 if not accounts:
@@ -61,10 +72,23 @@ def _run_loop(orchestrator: WorkerOrchestrator):
 def main():
     """Entry point"""
     import os
+    from backend.services import ConfigSettingService
 
     check_interval = int(os.environ.get('CHECK_INTERVAL', '60'))
 
-    orchestrator = WorkerOrchestrator(check_interval=check_interval)
+    # อ่าน max_body_length จาก database
+    max_body_length = 300  # default
+    try:
+        with get_db_context() as db:
+            max_body_length = ConfigSettingService.get_int(db, 'max_body_length', 300)
+            logger.info(f"📏 Max body length: {max_body_length} characters")
+    except Exception as e:
+        logger.warning(f"Failed to read max_body_length from database, using default: {e}")
+
+    orchestrator = WorkerOrchestrator(
+        check_interval=check_interval,
+        max_body_length=max_body_length
+    )
     _run_loop(orchestrator)
 
 
