@@ -72,7 +72,7 @@ def get_filter_rule(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Filter rule {rule_id} not found",
         )
-    return rule
+    return _serialize_rule(rule)
 
 
 @router.post(
@@ -86,9 +86,10 @@ def create_filter_rule(
     current_user: User = Depends(get_current_user),
 ):
     """Create a new filter rule"""
-    return FilterRuleService.create(
+    rule = FilterRuleService.create(
         db, rule_data, user_id=current_user.id
     )
+    return _serialize_rule(rule)
 
 
 @router.put("/{rule_id}", response_model=FilterRuleResponse)
@@ -107,7 +108,7 @@ def update_filter_rule(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Filter rule {rule_id} not found",
         )
-    return rule
+    return _serialize_rule(rule)
 
 
 @router.delete("/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
