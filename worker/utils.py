@@ -89,7 +89,7 @@ def get_email_body(msg, max_length: int = 300) -> str:
             body = clean_html_tags(html_body)
 
         body = body.strip()
-        if len(body) > max_length:
+        if max_length > 0 and len(body) > max_length:
             body = body[:max_length] + "..."
 
         return body
