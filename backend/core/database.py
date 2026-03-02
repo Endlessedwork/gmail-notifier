@@ -130,24 +130,54 @@ def run_migrations():
         has_filter_rules = cur.fetchone()
         if has_filter_rules:
             try:
+                import json as _json
                 cur.execute("PRAGMA table_info(filter_rules)")
                 cols = [r[1] for r in cur.fetchall()]
 
                 # เพิ่ม channel_ids ถ้ายังไม่มี
                 if "channel_ids" not in cols:
                     cur.execute("ALTER TABLE filter_rules ADD COLUMN channel_ids TEXT")
-
-                    # แปลงข้อมูลเก่าจาก channel_id เป็น channel_ids (JSON array)
                     if "channel_id" in cols:
-                        import json
                         cur.execute("SELECT id, channel_id FROM filter_rules WHERE channel_id IS NOT NULL")
-                        rows = cur.fetchall()
-                        for row_id, channel_id in rows:
-                            channel_ids_json = json.dumps([channel_id])
-                            cur.execute("UPDATE filter_rules SET channel_ids = ? WHERE id = ?", (channel_ids_json, row_id))
+                        for row_id, channel_id in cur.fetchall():
+                            cur.execute("UPDATE filter_rules SET channel_ids = ? WHERE id = ?",
+                                        (_json.dumps([channel_id]), row_id))
+                    cols.append("channel_ids")
 
-                    # ไม่ลบ channel_id column (SQLite ไม่รองรับ DROP COLUMN)
-                    # แค่ไม่ใช้มันในโค้ดใหม่
+                # ถ้า channel_id ยังอยู่ → recreate table เพื่อเอา NOT NULL constraint ออก
+                if "channel_id" in cols:
+                    cur.execute("PRAGMA foreign_keys = OFF")
+                    cur.execute("""
+                        CREATE TABLE filter_rules_new (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                            gmail_account_id INTEGER NOT NULL,
+                            name TEXT NOT NULL,
+                            field TEXT NOT NULL,
+                            match_type TEXT DEFAULT 'contains',
+                            match_value TEXT NOT NULL,
+                            channel_ids TEXT NOT NULL DEFAULT '[]',
+                            priority INTEGER DEFAULT 50,
+                            enabled BOOLEAN DEFAULT 1,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            FOREIGN KEY (gmail_account_id) REFERENCES gmail_accounts(id) ON DELETE CASCADE
+                        )
+                    """)
+                    cur.execute("""
+                        INSERT INTO filter_rules_new
+                            (id, user_id, gmail_account_id, name, field, match_type,
+                             match_value, channel_ids, priority, enabled, created_at, updated_at)
+                        SELECT id, user_id, gmail_account_id, name, field, match_type,
+                               match_value, COALESCE(channel_ids, '[]'), priority, enabled,
+                               created_at, updated_at
+                        FROM filter_rules
+                    """)
+                    cur.execute("DROP TABLE filter_rules")
+                    cur.execute("ALTER TABLE filter_rules_new RENAME TO filter_rules")
+                    cur.execute("CREATE INDEX IF NOT EXISTS idx_rules_user ON filter_rules(user_id)")
+                    cur.execute("CREATE INDEX IF NOT EXISTS idx_filter_rules_account ON filter_rules(gmail_account_id)")
+                    cur.execute("PRAGMA foreign_keys = ON")
             except sqlite3.OperationalError:
                 pass
         conn.commit()
