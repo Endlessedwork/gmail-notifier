@@ -7,6 +7,9 @@ services:
     ports:
       - "3000:80"
     environment:
+      # === Security (Required) ===
+      - SECRET_KEY=${SECRET_KEY}
+
       # === Encryption (Required) ===
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
 

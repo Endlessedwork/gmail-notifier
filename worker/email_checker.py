@@ -196,7 +196,8 @@ class EmailChecker:
                 exists = db.query(NotificationLog).filter(
                     NotificationLog.gmail_account_id == email_data['account_id'],
                     NotificationLog.email_subject == email_data['subject'],
-                    NotificationLog.email_from == email_data['from']
+                    NotificationLog.email_from == email_data['from'],
+                    NotificationLog.email_date == email_data['date']
                 ).first() is not None
 
                 return exists
