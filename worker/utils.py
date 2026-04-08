@@ -111,6 +111,8 @@ def clean_html_tags(text: str) -> str:
     text = re.sub(r'<!--[\s\S]*?-->', '', text)
     # แทน <br>, <p>, <div>, <tr>, <li> ด้วย newline
     text = re.sub(r'<(?:br|/p|/div|/tr|/li)[^>]*>', '\n', text, flags=re.IGNORECASE)
+    # แปลง <a href="url">text</a> เป็น text (url)
+    text = re.sub(r'<a\s[^>]*href=["\']([^"\']+)["\'][^>]*>([\s\S]*?)</a>', r'\2 (\1)', text, flags=re.IGNORECASE)
     # ลบ HTML tags ที่เหลือ
     text = re.sub(r'<[^>]+>', '', text)
     # แปลง HTML entities
