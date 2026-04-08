@@ -42,23 +42,17 @@ class NotificationSender:
         date_str: str,
         body: str = "",
         rule_name: Optional[str] = None
-    ) -> bool:
+    ) -> tuple:
         """
         ส่ง notification
 
-        Args:
-            subject: Email subject
-            sender: Email sender
-            date_str: Email date
-            body: Email body preview
-            rule_name: Filter rule name (optional)
-
         Returns:
-            True ถ้าส่งสำเร็จ
+            (success: bool, error_message: str | None)
         """
         if not self.channel.enabled:
-            logger.warning(f"Channel {self.channel.name} is disabled")
-            return False
+            msg = f"Channel {self.channel.name} is disabled"
+            logger.warning(msg)
+            return False, msg
 
         try:
             if self.channel.type == "telegram":
@@ -68,11 +62,13 @@ class NotificationSender:
             elif self.channel.type == "webhook":
                 return self._send_webhook(subject, sender, date_str, body, rule_name)
             else:
-                logger.error(f"Unknown channel type: {self.channel.type}")
-                return False
+                msg = f"Unknown channel type: {self.channel.type}"
+                logger.error(msg)
+                return False, msg
         except Exception as e:
-            logger.error(f"Failed to send notification via {self.channel.type}: {e}")
-            return False
+            msg = f"Failed to send notification via {self.channel.type}: {e}"
+            logger.error(msg)
+            return False, msg
 
     def _send_telegram(
         self,
@@ -81,14 +77,15 @@ class NotificationSender:
         date_str: str,
         body: str,
         rule_name: Optional[str]
-    ) -> bool:
+    ) -> tuple:
         """ส่ง notification ผ่าน Telegram"""
         bot_token = self.config.get('bot_token')
         chat_id = self.config.get('chat_id')
 
         if not bot_token or not chat_id:
-            logger.error(f"Missing bot_token or chat_id for {self.channel.name}")
-            return False
+            msg = f"Missing bot_token or chat_id for {self.channel.name}"
+            logger.error(msg)
+            return False, msg
 
         # Telegram HTML parse mode requires escaping dynamic content
         safe_rule_name = html.escape(rule_name) if rule_name else None
@@ -127,14 +124,16 @@ class NotificationSender:
 
             if resp.status_code == 200:
                 logger.info(f"✅ Sent to Telegram {chat_id}: {subject}")
-                return True
+                return True, None
             else:
-                logger.error(f"❌ Telegram API error: {resp.status_code} - {resp.text}")
-                return False
+                msg = f"Telegram API error: {resp.status_code} - {resp.text}"
+                logger.error(f"❌ {msg}")
+                return False, msg
 
         except requests.RequestException as e:
-            logger.error(f"❌ Telegram request failed: {e}")
-            return False
+            msg = f"Telegram request failed: {e}"
+            logger.error(f"❌ {msg}")
+            return False, msg
 
     def _send_line(
         self,
@@ -143,13 +142,14 @@ class NotificationSender:
         date_str: str,
         body: str,
         rule_name: Optional[str]
-    ) -> bool:
+    ) -> tuple:
         """ส่ง notification ผ่าน LINE Notify"""
         access_token = self.config.get('access_token')
 
         if not access_token:
-            logger.error(f"Missing access_token for {self.channel.name}")
-            return False
+            msg = f"Missing access_token for {self.channel.name}"
+            logger.error(msg)
+            return False, msg
 
         message = f"📧 New Email\n\n"
 
@@ -182,14 +182,16 @@ class NotificationSender:
 
             if resp.status_code == 200:
                 logger.info(f"✅ Sent to LINE: {subject}")
-                return True
+                return True, None
             else:
-                logger.error(f"❌ LINE API error: {resp.status_code} - {resp.text}")
-                return False
+                msg = f"LINE API error: {resp.status_code} - {resp.text}"
+                logger.error(f"❌ {msg}")
+                return False, msg
 
         except requests.RequestException as e:
-            logger.error(f"❌ LINE request failed: {e}")
-            return False
+            msg = f"LINE request failed: {e}"
+            logger.error(f"❌ {msg}")
+            return False, msg
 
     def _send_webhook(
         self,
@@ -198,15 +200,16 @@ class NotificationSender:
         date_str: str,
         body: str,
         rule_name: Optional[str]
-    ) -> bool:
+    ) -> tuple:
         """ส่ง notification ผ่าน Webhook"""
         url = self.config.get('url')
         method = self.config.get('method', 'POST').upper()
         headers = self.config.get('headers', {})
 
         if not url:
-            logger.error(f"Missing url for {self.channel.name}")
-            return False
+            msg = f"Missing url for {self.channel.name}"
+            logger.error(msg)
+            return False, msg
 
         payload = {
             'subject': subject,
@@ -223,16 +226,19 @@ class NotificationSender:
             elif method == 'GET':
                 resp = requests.get(url, params=payload, headers=headers, timeout=10)
             else:
-                logger.error(f"Unsupported HTTP method: {method}")
-                return False
+                msg = f"Unsupported HTTP method: {method}"
+                logger.error(msg)
+                return False, msg
 
             if resp.status_code in [200, 201, 202, 204]:
                 logger.info(f"✅ Sent to webhook {url}: {subject}")
-                return True
+                return True, None
             else:
-                logger.error(f"❌ Webhook error: {resp.status_code} - {resp.text}")
-                return False
+                msg = f"Webhook error: {resp.status_code} - {resp.text}"
+                logger.error(f"❌ {msg}")
+                return False, msg
 
         except requests.RequestException as e:
-            logger.error(f"❌ Webhook request failed: {e}")
-            return False
+            msg = f"Webhook request failed: {e}"
+            logger.error(f"❌ {msg}")
+            return False, msg

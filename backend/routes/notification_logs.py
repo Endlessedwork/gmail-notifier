@@ -53,7 +53,7 @@ def get_notification_log(
     current_user: User = Depends(get_current_user),
 ):
     """Get a notification log by ID"""
-    log = NotificationLogService.get_by_id(db, log_id)
+    log = NotificationLogService.get_by_id(db, log_id, user_id=current_user.id)
     if not log:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

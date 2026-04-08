@@ -41,7 +41,10 @@ def health():
 
 
 @router.get("/config")
-def get_config(db: Session = Depends(get_db)):
+def get_config(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Config - แปลงจาก config-settings เป็น format ที่ frontend ต้องการ"""
     def get(k: str, default: str = ""):
         return ConfigSettingService.get_value(db, k, default)
@@ -65,8 +68,9 @@ def get_config(db: Session = Depends(get_db)):
 def update_config(
     config_data: dict,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    """Update config settings - บันทึกลง config_settings table (ไม่ต้อง auth สำหรับ legacy compatibility)"""
+    """Update config settings - บันทึกลง config_settings table"""
     if "settings" not in config_data:
         raise HTTPException(status_code=400, detail="Missing 'settings' field")
 
@@ -86,9 +90,10 @@ def update_config(
 @router.get("/metrics")
 def get_metrics(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    """Metrics - แปลงจาก notification-logs stats (ไม่ต้อง auth สำหรับ legacy compatibility)"""
-    stats = NotificationLogService.get_stats(db, user_id=None)
+    """Metrics - แปลงจาก notification-logs stats (scoped to current user)"""
+    stats = NotificationLogService.get_stats(db, user_id=current_user.id)
     return {
         "total_emails_processed": stats.get("total", 0),
         "total_notifications_sent": stats.get("sent", 0),
@@ -100,15 +105,19 @@ def get_metrics(
 @router.get("/rules")
 def get_rules(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    """Rules - alias ไป filter-rules (ไม่ต้อง auth สำหรับ legacy compatibility)"""
-    rules, _ = FilterRuleService.get_all(db, skip=0, limit=1000, user_id=None)
+    """Rules - alias ไป filter-rules (scoped to current user)"""
+    rules, _ = FilterRuleService.get_all(db, skip=0, limit=1000, user_id=current_user.id)
     return {"rules": [_serialize_rule(r) for r in rules]}
 
 
 @router.get("/worker-status")
-def get_worker_status(db: Session = Depends(get_db)):
-    """ตรวจสอบสถานะ worker และ Gmail accounts"""
+def get_worker_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """ตรวจสอบสถานะ worker และ Gmail accounts (scoped to current user)"""
     status = {
         "timestamp": datetime.utcnow().isoformat(),
         "worker": {
@@ -176,6 +185,7 @@ def get_worker_status(db: Session = Depends(get_db)):
     if not status["worker"]["running"]:
         five_minutes_ago = datetime.utcnow() - timedelta(minutes=5)
         recent_check = db.query(GmailAccount).filter(
+            GmailAccount.user_id == current_user.id,
             GmailAccount.last_checked_at >= five_minutes_ago
         ).first()
 
@@ -184,8 +194,10 @@ def get_worker_status(db: Session = Depends(get_db)):
             status["worker"]["check_method"] = "last_checked_at"
             status["worker"]["last_activity"] = recent_check.last_checked_at.isoformat()
 
-    # เช็ค Gmail accounts
-    accounts = db.query(GmailAccount).all()
+    # เช็ค Gmail accounts (scoped to current user)
+    accounts = db.query(GmailAccount).filter(
+        GmailAccount.user_id == current_user.id
+    ).all()
     status["gmail_accounts"]["total"] = len(accounts)
     status["gmail_accounts"]["enabled"] = len([a for a in accounts if a.enabled])
 
@@ -203,8 +215,8 @@ def get_worker_status(db: Session = Depends(get_db)):
             if not status["gmail_accounts"]["last_checked"] or acc.last_checked_at > datetime.fromisoformat(status["gmail_accounts"]["last_checked"]):
                 status["gmail_accounts"]["last_checked"] = acc.last_checked_at.isoformat()
 
-    # เช็ค notification logs
-    logs_count = NotificationLogService._user_scoped_query(db, user_id=None).count()
+    # เช็ค notification logs (scoped to current user)
+    logs_count = NotificationLogService._user_scoped_query(db, user_id=current_user.id).count()
     status["database"]["notification_logs_count"] = logs_count
 
     # Database path

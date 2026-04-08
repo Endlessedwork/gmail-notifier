@@ -40,7 +40,12 @@ export function WorkerStatus() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch('/api/worker-status')
+      const token = localStorage.getItem('access_token')
+      const headers: Record<string, string> = {}
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+      const response = await fetch('/api/worker-status', { headers })
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
@@ -80,8 +85,8 @@ export function WorkerStatus() {
 
   if (error) {
     return (
-      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-        <div className="flex items-center gap-2 text-red-700">
+      <div className="p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
+        <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
           <XCircle className="w-5 h-5" />
           <div>
             <p className="font-semibold">เกิดข้อผิดพลาด</p>
@@ -136,18 +141,18 @@ export function WorkerStatus() {
       {/* Worker Status Card */}
       <div className="bg-card border border-border rounded-lg p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className={`p-2 rounded-lg ${status.worker.running ? 'bg-green-100' : 'bg-red-100'}`}>
+          <div className={`p-2 rounded-lg ${status.worker.running ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'}`}>
             {status.worker.running ? (
-              <CheckCircle className="w-6 h-6 text-green-600" />
+              <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
             ) : (
-              <XCircle className="w-6 h-6 text-red-600" />
+              <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
             )}
           </div>
           <div>
             <h3 className="text-lg font-semibold">
               Worker Process
             </h3>
-            <p className={`text-sm ${status.worker.running ? 'text-green-600' : 'text-red-600'}`}>
+            <p className={`text-sm ${status.worker.running ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {status.worker.running ? '✓ ทำงานปกติ' : '✗ ไม่ได้ทำงาน'}
             </p>
           </div>
@@ -190,7 +195,7 @@ export function WorkerStatus() {
               <div
                 key={account.id}
                 className={`p-3 rounded-lg border ${
-                  account.enabled ? 'border-green-200 bg-green-50' : 'border-gray-200 bg-gray-50'
+                  account.enabled ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950' : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -203,8 +208,8 @@ export function WorkerStatus() {
                   <div
                     className={`px-2 py-1 rounded text-xs font-medium ${
                       account.enabled
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-700'
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                        : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                     }`}
                   >
                     {account.enabled ? 'Enabled' : 'Disabled'}

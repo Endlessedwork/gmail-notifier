@@ -105,12 +105,13 @@ class WorkerOrchestrator:
                     email_subject=subject,
                     email_from=sender,
                     email_date=date_str,
-                    success=False
+                    success=False,
+                    error_message=f"Channel {channel_id} not found"
                 )
                 continue
 
             sender_instance = NotificationSender(channel)
-            success = sender_instance.send(
+            success, error_message = sender_instance.send(
                 subject=subject,
                 sender=sender,
                 date_str=date_str,
@@ -125,7 +126,8 @@ class WorkerOrchestrator:
                 email_subject=subject,
                 email_from=sender,
                 email_date=date_str,
-                success=success
+                success=success,
+                error_message=error_message
             )
 
     def _log_notification(
@@ -136,7 +138,8 @@ class WorkerOrchestrator:
         email_subject: str,
         email_from: str,
         email_date: str,
-        success: bool
+        success: bool,
+        error_message: str = None
     ):
         try:
             with get_db_context() as db:
@@ -148,7 +151,8 @@ class WorkerOrchestrator:
                     email_from=email_from,
                     email_date=email_date,
                     status='sent' if success else 'failed',
-                    sent_at=datetime.utcnow() if success else None
+                    sent_at=datetime.utcnow() if success else None,
+                    error_message=error_message
                 )
                 db.add(log)
                 db.commit()

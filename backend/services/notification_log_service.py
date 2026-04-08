@@ -46,13 +46,14 @@ class NotificationLogService:
         return logs, total
 
     @staticmethod
-    def get_by_id(db: Session, log_id: int) -> Optional[NotificationLog]:
-        """Get log by ID"""
-        return (
-            db.query(NotificationLog)
-            .filter(NotificationLog.id == log_id)
-            .first()
-        )
+    def get_by_id(db: Session, log_id: int, user_id: Optional[int] = None) -> Optional[NotificationLog]:
+        """Get log by ID, optionally scoped to user"""
+        query = db.query(NotificationLog).filter(NotificationLog.id == log_id)
+        if user_id is not None:
+            query = query.join(GmailAccount).filter(
+                GmailAccount.user_id == user_id
+            )
+        return query.first()
 
     @staticmethod
     def create(

@@ -100,15 +100,31 @@ def get_email_body(msg, max_length: int = 300) -> str:
 
 def clean_html_tags(text: str) -> str:
     """
-    ลบ HTML tags ออกจาก text
-
-    Args:
-        text: Text with HTML tags
-
-    Returns:
-        Clean text
+    ลบ HTML tags, CSS, script และ entities ออกจาก text
+    แล้ว normalize whitespace ให้เหลือแค่เนื้อหาจริง
     """
-    return re.sub(r'<[^>]+>', '', text)
+    # ลบ style blocks ทั้งก้อน
+    text = re.sub(r'<style[^>]*>[\s\S]*?</style>', '', text, flags=re.IGNORECASE)
+    # ลบ script blocks ทั้งก้อน
+    text = re.sub(r'<script[^>]*>[\s\S]*?</script>', '', text, flags=re.IGNORECASE)
+    # ลบ HTML comments
+    text = re.sub(r'<!--[\s\S]*?-->', '', text)
+    # แทน <br>, <p>, <div>, <tr>, <li> ด้วย newline
+    text = re.sub(r'<(?:br|/p|/div|/tr|/li)[^>]*>', '\n', text, flags=re.IGNORECASE)
+    # ลบ HTML tags ที่เหลือ
+    text = re.sub(r'<[^>]+>', '', text)
+    # แปลง HTML entities
+    text = re.sub(r'&nbsp;', ' ', text)
+    text = re.sub(r'&amp;', '&', text)
+    text = re.sub(r'&lt;', '<', text)
+    text = re.sub(r'&gt;', '>', text)
+    text = re.sub(r'&quot;', '"', text)
+    text = re.sub(r'&#\d+;', '', text)
+    # Normalize whitespace: รวม spaces/tabs ติดกันเป็น space เดียว
+    text = re.sub(r'[^\S\n]+', ' ', text)
+    # รวม newlines ติดกันเป็น newline เดียว
+    text = re.sub(r'\n\s*\n+', '\n', text)
+    return text.strip()
 
 
 def match_filter(field_value: str, match_type: str, match_value: str) -> bool:
