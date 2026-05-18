@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Gmail Notifier">
+  <defs>
+    <clipPath id="mark">
+      <rect x="6" y="8" width="48" height="48" rx="14" />
+    </clipPath>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.2" flood-color="#1b1b17" flood-opacity=".18" />
+    </filter>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#f7f5ef" />
+  <g filter="url(#shadow)">
+    <g clip-path="url(#mark)">
+      <path d="M6 8h48v48H6z" fill="#1a73e8" />
+      <path d="M30 8h24v24H30z" fill="#ea4335" />
+      <path d="M30 32h24v24H30z" fill="#fbbc04" />
+      <path d="M6 32h24v24H6z" fill="#34a853" />
+      <path d="M6 8h48v48H6z" fill="none" stroke="#f7f5ef" stroke-width="4" />
+    </g>
+    <text
+      x="30"
+      y="39"
+      text-anchor="middle"
+      font-family="IBM Plex Mono, ui-monospace, Menlo, monospace"
+      font-size="24"
+      font-weight="700"
+      fill="#ffffff"
+    >G</text>
+    <circle cx="51" cy="10" r="7" fill="#34a853" stroke="#f7f5ef" stroke-width="4" />
+  </g>
+</svg>
