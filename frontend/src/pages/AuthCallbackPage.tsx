@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 
 /**
  * หน้า callback หลัง Google OAuth สำเร็จ
- * อ่าน access_token, refresh_token จาก URL hash แล้ว redirect ไป /
+ * อ่าน access_token, refresh_token จาก URL hash แล้ว redirect ไป dashboard
  */
 export function AuthCallbackPage() {
   const navigate = useNavigate()
@@ -28,7 +28,7 @@ export function AuthCallbackPage() {
       }
 
       await handleOAuthCallback(accessToken, refreshToken)
-      navigate('/', { replace: true })
+      navigate('/dashboard', { replace: true })
     }
     run()
   }, [navigate, handleOAuthCallback])

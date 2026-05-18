@@ -60,7 +60,7 @@ export function LoginPage() {
     try {
       await login(username.trim(), password)
       toast.success('เข้าสู่ระบบสำเร็จ')
-      navigate('/', { replace: true })
+      navigate('/dashboard', { replace: true })
     } catch (error: any) {
       toast.error(error.message || 'เข้าสู่ระบบไม่สำเร็จ')
     } finally {
@@ -76,7 +76,7 @@ export function LoginPage() {
     <div className="min-h-screen bg-[#f7f5ef] text-[#0e0e0c] [font-family:'IBM_Plex_Sans_Thai','IBM_Plex_Sans',ui-sans-serif,system-ui,sans-serif]">
       <header className="sticky top-0 z-40 border-b border-[#1b1b1726] bg-[#f7f5ef]/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
-          <Link to="/landing" className="flex items-center gap-3 font-semibold tracking-[-0.01em]">
+          <Link to="/" className="flex items-center gap-3 font-semibold tracking-[-0.01em]">
             <span className="relative grid h-8 w-8 place-items-center rounded-lg bg-[conic-gradient(from_220deg,#1a73e8_0_25%,#ea4335_25%_50%,#fbbc04_50%_75%,#34a853_75%_100%)] font-mono text-sm font-bold text-white shadow-[inset_0_0_0_2px_#f7f5ef] after:absolute after:right-[-2px] after:top-[-2px] after:h-2 after:w-2 after:rounded-full after:bg-[#34a853] after:ring-2 after:ring-[#f7f5ef]">
               G
             </span>
@@ -84,7 +84,7 @@ export function LoginPage() {
           </Link>
 
           <Link
-            to="/landing"
+            to="/"
             className="inline-flex items-center gap-2 text-sm font-medium text-[#6b675c] transition-colors hover:text-[#0e0e0c]"
           >
             <ArrowLeft className="h-4 w-4" />

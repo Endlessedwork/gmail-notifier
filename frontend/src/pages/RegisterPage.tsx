@@ -35,7 +35,7 @@ export function RegisterPage() {
     try {
       await register(username, email, password)
       toast.success('สมัครสมาชิกสำเร็จค่ะ')
-      navigate('/')
+      navigate('/dashboard')
     } catch (error: any) {
       toast.error(error.message || 'สมัครสมาชิกไม่สำเร็จ')
     } finally {

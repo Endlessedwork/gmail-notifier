@@ -36,7 +36,7 @@ export function RegisterPage() {
     try {
       await register(username.trim(), email.trim(), password)
       toast.success('Account created successfully')
-      navigate('/', { replace: true })
+      navigate('/dashboard', { replace: true })
     } catch (error) {
       if (error instanceof APIError) {
         toast.error(error.message)

@@ -18,24 +18,24 @@ const navigationGroups = [
   {
     label: 'ภาพรวม',
     items: [
-      { name: 'Dashboard', href: '/', icon: LayoutDashboard, badge: 'live', end: true },
-      { name: 'Notification Logs', href: '/logs', icon: FileText },
+      { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, badge: 'live', end: true },
+      { name: 'Notification Logs', href: '/dashboard/logs', icon: FileText },
     ],
   },
   {
     label: 'ตั้งค่า',
     items: [
-      { name: 'Gmail Accounts', href: '/gmail', icon: Mail },
-      { name: 'Channels', href: '/channels', icon: Bell },
-      { name: 'Filter Rules', href: '/filters', icon: Filter },
+      { name: 'Gmail Accounts', href: '/dashboard/gmail', icon: Mail },
+      { name: 'Channels', href: '/dashboard/channels', icon: Bell },
+      { name: 'Filter Rules', href: '/dashboard/filters', icon: Filter },
     ],
   },
   {
     label: 'ระบบ',
     items: [
-      { name: 'Worker Status', href: '/worker-status', icon: Activity },
-      { name: 'Webhook Guide', href: '/webhook-guide', icon: Webhook },
-      { name: 'Settings', href: '/settings', icon: SettingsIcon },
+      { name: 'Worker Status', href: '/dashboard/worker-status', icon: Activity },
+      { name: 'Webhook Guide', href: '/dashboard/webhook-guide', icon: Webhook },
+      { name: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },
     ],
   },
 ]
@@ -50,7 +50,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
 
   return (
     <aside className="flex h-full w-[240px] flex-col gap-4 border-r border-[#1b1b1726] bg-[#fbfaf3] px-3.5 py-4">
-      <NavLink to="/" onClick={onNavigate} className="flex items-center gap-2.5 px-2 py-1.5 font-semibold tracking-[-0.01em]">
+      <NavLink to="/dashboard" onClick={onNavigate} className="flex items-center gap-2.5 px-2 py-1.5 font-semibold tracking-[-0.01em]">
         <span className="relative grid h-[26px] w-[26px] place-items-center rounded-[7px] bg-[conic-gradient(from_220deg,#1a73e8_0_25%,#ea4335_25%_50%,#fbbc04_50%_75%,#34a853_75%_100%)] font-mono text-xs font-bold text-white shadow-[inset_0_0_0_2px_#fbfaf3] after:absolute after:right-[-2px] after:top-[-2px] after:h-1.5 after:w-1.5 after:rounded-full after:bg-[#34a853] after:ring-2 after:ring-[#fbfaf3]">
           G
         </span>

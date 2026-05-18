@@ -149,7 +149,7 @@ export function Dashboard() {
             รีโหลดข้อมูล
           </button>
           <Link
-            to="/filters"
+            to="/dashboard/filters"
             className="inline-flex items-center gap-2 rounded-[10px] border border-[#0e0e0c] bg-[#0e0e0c] px-3.5 py-2 text-sm font-semibold text-[#f7f5ef] transition hover:-translate-y-0.5 hover:bg-black"
           >
             <Filter className="h-4 w-4" />
@@ -201,7 +201,7 @@ export function Dashboard() {
         <div className="overflow-hidden rounded-[14px] border border-[#1b1b1726] bg-white">
           <div className="flex items-center justify-between border-b border-[#1b1b1726] bg-[#fbfaf3] px-4 py-3">
             <h2 className="text-sm font-semibold">การแจ้งเตือนล่าสุด</h2>
-            <Link to="/logs" className="inline-flex items-center gap-1 text-xs font-semibold text-[#1a73e8]">
+            <Link to="/dashboard/logs" className="inline-flex items-center gap-1 text-xs font-semibold text-[#1a73e8]">
               ดูทั้งหมด <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -236,7 +236,7 @@ export function Dashboard() {
         <div className="overflow-hidden rounded-[14px] border border-[#1b1b1726] bg-white">
           <div className="flex items-center justify-between border-b border-[#1b1b1726] bg-[#fbfaf3] px-4 py-3">
             <h2 className="text-sm font-semibold">สถานะช่องทาง</h2>
-            <Link to="/channels" className="inline-flex items-center gap-1 text-xs font-semibold text-[#1a73e8]">
+            <Link to="/dashboard/channels" className="inline-flex items-center gap-1 text-xs font-semibold text-[#1a73e8]">
               จัดการ <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -271,7 +271,7 @@ export function Dashboard() {
         <div className="overflow-hidden rounded-[14px] border border-[#1b1b1726] bg-white">
           <div className="flex items-center justify-between border-b border-[#1b1b1726] bg-[#fbfaf3] px-4 py-3">
             <h2 className="text-sm font-semibold">Connected Gmail accounts</h2>
-            <Link to="/gmail" className="inline-flex items-center gap-1 text-xs font-semibold text-[#1a73e8]">
+            <Link to="/dashboard/gmail" className="inline-flex items-center gap-1 text-xs font-semibold text-[#1a73e8]">
               จัดการ <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           </div>

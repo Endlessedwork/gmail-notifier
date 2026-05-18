@@ -13,14 +13,14 @@ export function Header() {
 
   const routeLabel =
     [
-      { path: '/', label: 'Dashboard' },
-      { path: '/gmail', label: 'Gmail Accounts' },
-      { path: '/channels', label: 'Channels' },
-      { path: '/filters', label: 'Filter Rules' },
-      { path: '/logs', label: 'Notification Logs' },
-      { path: '/worker-status', label: 'Worker Status' },
-      { path: '/webhook-guide', label: 'Webhook Guide' },
-      { path: '/settings', label: 'Settings' },
+      { path: '/dashboard', label: 'Dashboard' },
+      { path: '/dashboard/gmail', label: 'Gmail Accounts' },
+      { path: '/dashboard/channels', label: 'Channels' },
+      { path: '/dashboard/filters', label: 'Filter Rules' },
+      { path: '/dashboard/logs', label: 'Notification Logs' },
+      { path: '/dashboard/worker-status', label: 'Worker Status' },
+      { path: '/dashboard/webhook-guide', label: 'Webhook Guide' },
+      { path: '/dashboard/settings', label: 'Settings' },
     ].find((item) => item.path === location.pathname)?.label || 'Dashboard'
 
   const handleLogout = () => {

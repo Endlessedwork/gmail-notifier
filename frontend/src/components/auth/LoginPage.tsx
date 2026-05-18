@@ -23,7 +23,7 @@ export function LoginPage() {
     try {
       await login(username.trim(), password)
       toast.success('Login successful')
-      navigate('/', { replace: true })
+      navigate('/dashboard', { replace: true })
     } catch (error) {
       if (error instanceof APIError) {
         toast.error(error.message)
