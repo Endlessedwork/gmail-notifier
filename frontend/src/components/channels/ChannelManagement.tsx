@@ -1,38 +1,35 @@
 import { useState } from 'react'
-import { Bell, Plus, Edit, Trash2, Loader2, Send, MessageSquare, Webhook } from 'lucide-react'
-import { Button } from '../ui/button'
-import { Badge } from '../ui/badge'
+import { Bell, Edit, Loader2, MessageSquare, Plus, Send, Trash2, Webhook } from 'lucide-react'
 import { ChannelDialog } from './ChannelDialog'
-import { useNotificationChannels, useDeleteNotificationChannel } from '@/hooks/useNotificationChannels'
-import type { NotificationChannel } from '@/types'
+import { useDeleteNotificationChannel, useNotificationChannels } from '@/hooks/useNotificationChannels'
+import type { ChannelType, NotificationChannel } from '@/types'
 
-const CHANNEL_ICONS = {
-  telegram: Send,
-  line: MessageSquare,
-  webhook: Webhook,
+const channelMeta: Record<ChannelType, { icon: typeof Send; accent: string; soft: string; label: string }> = {
+  telegram: { icon: Send, accent: '#229ed9', soft: 'bg-[#e8f4fb]', label: 'Telegram' },
+  line: { icon: MessageSquare, accent: '#06c755', soft: 'bg-[#e6f8ee]', label: 'LINE' },
+  webhook: { icon: Webhook, accent: '#7c4dff', soft: 'bg-[#efebff]', label: 'Webhook' },
 }
 
-const CHANNEL_COLORS = {
-  telegram: 'bg-blue-500',
-  line: 'bg-green-500',
-  webhook: 'bg-purple-500',
+function configSummary(channel: NotificationChannel) {
+  if (channel.type === 'telegram') return `chat_id / ${channel.config.chat_id || '-'}`
+  if (channel.type === 'line') return `token / ${channel.config.access_token ? 'configured' : '-'}`
+  return `url / ${channel.config.url || '-'}`
 }
 
 export function ChannelManagement() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingChannel, setEditingChannel] = useState<NotificationChannel | undefined>()
-
   const { data, isLoading, error } = useNotificationChannels()
   const deleteChannel = useDeleteNotificationChannel()
-
   const channels = data?.channels || []
+  const active = channels.filter((channel) => channel.enabled).length
 
-  const handleCreate = () => {
+  const openCreate = () => {
     setEditingChannel(undefined)
     setDialogOpen(true)
   }
 
-  const handleEdit = (channel: NotificationChannel) => {
+  const openEdit = (channel: NotificationChannel) => {
     setEditingChannel(channel)
     setDialogOpen(true)
   }
@@ -44,9 +41,9 @@ export function ChannelManagement() {
 
   if (error) {
     return (
-      <div className="bg-destructive/10 border border-destructive text-destructive rounded-lg p-6 text-center">
-        <p className="font-medium">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
-        <p className="text-sm mt-2">{(error as Error).message}</p>
+      <div className="rounded-[14px] border border-[#ea433566] bg-[#ea433512] p-6 text-center text-[#c43127]">
+        <p className="font-semibold">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
+        <p className="mt-2 text-sm">{(error as Error).message}</p>
       </div>
     )
   }
@@ -54,127 +51,126 @@ export function ChannelManagement() {
   return (
     <>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold">Notification Channels</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              จัดการช่องทางการแจ้งเตือน (Telegram, LINE, Webhook)
+            <div className="mb-2 inline-flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.08em] text-[#6b675c] before:h-[3px] before:w-9 before:rounded-full before:bg-[linear-gradient(90deg,#1a73e8_0_25%,#ea4335_25%_50%,#fbbc04_50%_75%,#34a853_75%_100%)]">
+              {channels.length} channels / {active} active
+            </div>
+            <h1 className="text-2xl font-semibold text-[#0e0e0c]">ช่องทางแจ้งเตือน</h1>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-[#6b675c]">
+              ปลายทางสำหรับส่งแจ้งเตือน รองรับ Telegram, LINE และ Webhook โดยแต่ละ rule ส่งได้หลายช่องทาง
             </p>
           </div>
-          <Button onClick={handleCreate} className="gap-2" disabled={isLoading}>
-            <Plus className="w-4 h-4" />
-            เพิ่ม Channel
-          </Button>
+
+          <button
+            type="button"
+            onClick={openCreate}
+            disabled={isLoading}
+            className="inline-flex items-center gap-2 rounded-[10px] border border-[#0e0e0c] bg-[#0e0e0c] px-3.5 py-2 text-sm font-semibold text-[#f7f5ef] transition hover:-translate-y-0.5 hover:bg-black disabled:opacity-60"
+          >
+            <Plus className="h-4 w-4" />
+            เพิ่มช่องทาง
+          </button>
         </div>
 
-        {/* Loading State */}
-        {isLoading && (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          </div>
-        )}
-
-        {/* Channels Grid */}
-        {!isLoading && channels.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {channels.map((channel) => {
-              const Icon = CHANNEL_ICONS[channel.type as keyof typeof CHANNEL_ICONS] || Bell
-              const colorClass = CHANNEL_COLORS[channel.type as keyof typeof CHANNEL_COLORS] || 'bg-gray-500'
-
+        <div className="rounded-[14px] border border-[#1b1b1726] bg-white p-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="mr-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[#6b675c]">Quick add</div>
+            {(['telegram', 'line', 'webhook'] as ChannelType[]).map((type) => {
+              const meta = channelMeta[type]
+              const Icon = meta.icon
               return (
-                <div
-                  key={channel.id}
-                  className="bg-card border border-border rounded-lg p-6 hover:shadow-sm transition-shadow"
+                <button
+                  key={type}
+                  type="button"
+                  onClick={openCreate}
+                  className="inline-flex items-center gap-2 rounded-[10px] border border-[#1b1b1726] bg-white px-3 py-2 text-sm font-semibold text-[#0e0e0c] transition hover:bg-[#efece2]"
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg ${colorClass} text-white flex items-center justify-center`}>
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">{channel.name}</h3>
-                        <p className="text-xs text-muted-foreground capitalize">
-                          {channel.type}
-                        </p>
-                      </div>
+                  <span className="grid h-6 w-6 place-items-center rounded-md text-white" style={{ backgroundColor: meta.accent }}>
+                    <Icon className="h-3.5 w-3.5" />
+                  </span>
+                  {meta.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center rounded-[14px] border border-[#1b1b1726] bg-white py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-[#6b675c]" />
+          </div>
+        ) : channels.length === 0 ? (
+          <div className="rounded-[14px] border border-[#1b1b1726] bg-white p-12 text-center">
+            <Bell className="mx-auto mb-4 h-14 w-14 text-[#6b675c]" />
+            <h3 className="text-lg font-semibold">ยังไม่มี Notification Channel</h3>
+            <p className="mx-auto mt-2 max-w-md text-sm text-[#6b675c]">เพิ่มช่องทางแรกเพื่อให้ rules ส่ง notification ออกไปได้</p>
+            <button type="button" onClick={openCreate} className="mt-6 inline-flex items-center gap-2 rounded-[10px] bg-[#0e0e0c] px-4 py-2.5 text-sm font-semibold text-[#f7f5ef]">
+              <Plus className="h-4 w-4" />
+              เพิ่มช่องทางแรก
+            </button>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {channels.map((channel) => {
+              const meta = channelMeta[channel.type]
+              const Icon = meta.icon
+              return (
+                <div key={channel.id} className={`rounded-[14px] border border-[#1b1b1726] p-4 ${meta.soft}`}>
+                  <div className="flex items-start gap-3">
+                    <span className="grid h-10 w-10 place-items-center rounded-[10px] text-white" style={{ backgroundColor: meta.accent }}>
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate font-semibold text-[#0e0e0c]">{channel.name}</h3>
+                      <div className="mt-0.5 font-mono text-[11px] text-[#6b675c]">id #{channel.id} / {channel.type}</div>
                     </div>
-                    <Badge variant={channel.enabled ? 'default' : 'secondary'}>
-                      {channel.enabled ? 'Active' : 'Disabled'}
-                    </Badge>
+                    <span className={`rounded-full px-2.5 py-1 font-mono text-[10px] uppercase ${channel.enabled ? 'bg-[#34a85318] text-[#1f8f47]' : 'bg-[#1b1b170f] text-[#6b675c]'}`}>
+                      {channel.enabled ? 'ok' : 'idle'}
+                    </span>
                   </div>
 
-                  {/* Channel Config Info */}
-                  <div className="space-y-2 text-sm">
-                    {channel.type === 'telegram' && channel.config.chat_id && (
-                      <div className="flex items-center justify-between text-muted-foreground">
-                        <span>Chat ID</span>
-                        <span className="text-xs font-mono">{channel.config.chat_id}</span>
-                      </div>
-                    )}
-                    {channel.type === 'webhook' && channel.config.url && (
-                      <div className="flex items-center justify-between text-muted-foreground">
-                        <span>Webhook URL</span>
-                        <span className="text-xs font-mono truncate max-w-[150px]">
-                          {channel.config.url}
-                        </span>
-                      </div>
-                    )}
+                  <div className="mt-4 divide-y divide-[#1b1b1726] rounded-[10px] bg-white/72 px-3">
+                    <div className="flex justify-between gap-3 py-2 font-mono text-[11px] text-[#6b675c]">
+                      <span>config</span>
+                      <span className="truncate text-[#1b1b17]">{configSummary(channel)}</span>
+                    </div>
+                    <div className="flex justify-between gap-3 py-2 font-mono text-[11px] text-[#6b675c]">
+                      <span>status</span>
+                      <span className="text-[#1b1b17]">{channel.enabled ? 'enabled' : 'disabled'}</span>
+                    </div>
+                    <div className="flex justify-between gap-3 py-2 font-mono text-[11px] text-[#6b675c]">
+                      <span>created</span>
+                      <span className="text-[#1b1b17]">{new Date(channel.created_at).toLocaleDateString('th-TH')}</span>
+                    </div>
                   </div>
 
-                  <div className="flex gap-2 mt-4 pt-4 border-t border-border">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1 gap-2"
-                      onClick={() => handleEdit(channel)}
-                    >
-                      <Edit className="w-3 h-3" />
+                  <div className="mt-4 flex gap-2 border-t border-[#1b1b1726] pt-3">
+                    <button type="button" onClick={() => openEdit(channel)} className="inline-flex flex-1 items-center justify-center gap-2 rounded-[10px] border border-[#1b1b1726] bg-white px-3 py-2 text-sm font-semibold text-[#0e0e0c] hover:bg-[#efece2]">
+                      <Edit className="h-4 w-4" />
                       แก้ไข
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-2 text-destructive hover:text-destructive"
-                      onClick={() => handleDelete(channel.id, channel.name)}
-                      disabled={deleteChannel.isPending}
-                    >
-                      {deleteChannel.isPending ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-3 h-3" />
-                      )}
-                      ลบ
-                    </Button>
+                    </button>
+                    <button type="button" onClick={() => handleDelete(channel.id, channel.name)} disabled={deleteChannel.isPending} className="inline-flex items-center justify-center gap-2 rounded-[10px] border border-[#ea433566] bg-white px-3 py-2 text-sm font-semibold text-[#ea4335] hover:bg-[#ea433512] disabled:opacity-60">
+                      {deleteChannel.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                    </button>
                   </div>
                 </div>
               )
             })}
-          </div>
-        )}
 
-        {/* Empty State */}
-        {!isLoading && channels.length === 0 && (
-          <div className="bg-card border border-border rounded-lg p-12 text-center">
-            <Bell className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">ยังไม่มี Notification Channel</h3>
-            <p className="text-muted-foreground mb-6">
-              เพิ่ม Channel เพื่อเริ่มรับการแจ้งเตือน
-            </p>
-            <Button onClick={handleCreate}>
-              <Plus className="w-4 h-4 mr-2" />
-              เพิ่ม Channel แรก
-            </Button>
+            <button type="button" onClick={openCreate} className="min-h-[220px] rounded-[14px] border border-dashed border-[#1b1b17] bg-transparent p-4 text-[#6b675c] transition hover:bg-white/60">
+              <div className="flex h-full flex-col items-center justify-center gap-3">
+                <span className="grid h-10 w-10 place-items-center rounded-[10px] border border-[#1b1b1726] bg-white text-[#0e0e0c]">
+                  <Plus className="h-5 w-5" />
+                </span>
+                <span className="font-semibold text-[#0e0e0c]">เพิ่มช่องทางใหม่</span>
+              </div>
+            </button>
           </div>
         )}
       </div>
 
-      {/* Channel Dialog */}
-      <ChannelDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        channel={editingChannel}
-      />
+      <ChannelDialog open={dialogOpen} onOpenChange={setDialogOpen} channel={editingChannel} />
     </>
   )
 }

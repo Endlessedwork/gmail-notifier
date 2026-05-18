@@ -1,24 +1,22 @@
 import { useState } from 'react'
-import { useNotificationLogs } from '@/hooks/useNotificationLogs'
+import { AlertCircle, CheckCircle2, Clock, Download, Filter, Loader2, Mail, RefreshCw } from 'lucide-react'
 import { useGmailAccounts } from '@/hooks/useGmailAccounts'
-import { ScrollArea } from '../ui/scroll-area'
-import { Badge } from '../ui/badge'
-import { Button } from '../ui/button'
-import {
-  AlertCircle,
-  CheckCircle,
-  Loader2,
-  Mail,
-  RefreshCw,
-  Filter,
-} from 'lucide-react'
-import { format } from 'date-fns'
-import { th } from 'date-fns/locale'
+import { useNotificationLogs } from '@/hooks/useNotificationLogs'
+import type { NotificationStatus } from '@/types'
 
-const statusConfig = {
-  sent: { icon: CheckCircle, color: 'text-green-600', badge: 'default' as const },
-  failed: { icon: AlertCircle, color: 'text-red-600', badge: 'destructive' as const },
-  pending: { icon: Loader2, color: 'text-yellow-600', badge: 'secondary' as const },
+const statusStyle: Record<NotificationStatus, { icon: typeof CheckCircle2; className: string; label: string }> = {
+  sent: { icon: CheckCircle2, className: 'bg-[#34a85318] text-[#1f8f47]', label: 'sent' },
+  failed: { icon: AlertCircle, className: 'bg-[#ea433518] text-[#c43127]', label: 'failed' },
+  pending: { icon: Clock, className: 'bg-[#fbbc0428] text-[#9a7a00]', label: 'pending' },
+}
+
+function formatTime(value: string) {
+  return new Date(value).toLocaleString('th-TH', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 export function LogsPage() {
@@ -26,50 +24,77 @@ export function LogsPage() {
   const [accountFilter, setAccountFilter] = useState<number | undefined>()
   const [offset, setOffset] = useState(0)
   const limit = 50
-
-  const { data: logsData, isLoading, refetch } = useNotificationLogs({
-    limit,
-    offset,
-    status: statusFilter,
-    account_id: accountFilter,
-  })
+  const { data: logsData, isLoading, refetch } = useNotificationLogs({ limit, offset, status: statusFilter, account_id: accountFilter })
   const { data: accountsData } = useGmailAccounts()
-
   const logs = logsData?.logs || []
   const total = logsData?.total ?? 0
   const accounts = accountsData?.accounts || []
-  const totalPages = Math.ceil(total / limit)
-  const currentPage = Math.floor(offset / limit) + 1
+  const sentCount = logs.filter((log) => log.status === 'sent').length
+  const failedCount = logs.filter((log) => log.status === 'failed').length
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Logs</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            ดูประวัติการแจ้งเตือนอีเมล
-          </p>
+          <div className="mb-2 inline-flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.08em] text-[#6b675c] before:h-[3px] before:w-9 before:rounded-full before:bg-[linear-gradient(90deg,#1a73e8_0_25%,#ea4335_25%_50%,#fbbc04_50%_75%,#34a853_75%_100%)]">
+            Live / {total.toLocaleString()} records
+          </div>
+          <h1 className="text-2xl font-semibold text-[#0e0e0c]">ประวัติการแจ้งเตือน</h1>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-[#6b675c]">ทุกการ match, delivery, retry และ error จาก notification pipeline</p>
         </div>
 
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="inline-flex items-center gap-2 rounded-[10px] border border-[#1b1b1726] bg-white px-3.5 py-2 text-sm font-semibold hover:bg-[#efece2]">
+            <Download className="h-4 w-4" />
+            Export CSV
+          </button>
+          <button type="button" onClick={() => refetch()} disabled={isLoading} className="inline-flex items-center gap-2 rounded-[10px] border border-[#1b1b1726] bg-white px-3.5 py-2 text-sm font-semibold hover:bg-[#efece2] disabled:opacity-60">
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            รีเฟรช
+          </button>
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-4">
+        {[
+          ['Current page', logs.length, '#1a73e8'],
+          ['Delivered', sentCount, '#34a853'],
+          ['Failures', failedCount, '#ea4335'],
+          ['Total logs', total, '#fbbc04'],
+        ].map(([label, value, color]) => (
+          <div key={label} className="overflow-hidden rounded-[14px] border border-[#1b1b1726] bg-white">
+            <div className="h-0.5" style={{ backgroundColor: color as string }} />
+            <div className="p-4">
+              <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#6b675c]">{label}</div>
+              <div className="mt-2 text-[28px] font-semibold leading-none">{Number(value).toLocaleString()}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-[14px] border border-[#1b1b1726] bg-white p-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-muted-foreground" />
-            <select
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              value={statusFilter ?? ''}
-              onChange={(e) => {
-                setStatusFilter(e.target.value || undefined)
+          <Filter className="h-4 w-4 text-[#6b675c]" />
+          {[
+            ['', 'ทั้งหมด'],
+            ['sent', 'ส่งสำเร็จ'],
+            ['failed', 'ล้มเหลว'],
+            ['pending', 'รอดำเนินการ'],
+          ].map(([value, label]) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => {
+                setStatusFilter(value || undefined)
                 setOffset(0)
               }}
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${statusFilter === (value || undefined) ? 'border-[#0e0e0c] bg-[#0e0e0c] text-[#f7f5ef]' : 'border-[#1b1b1726] bg-white text-[#1b1b17] hover:bg-[#efece2]'}`}
             >
-              <option value="">ทุกสถานะ</option>
-              <option value="sent">ส่งสำเร็จ</option>
-              <option value="failed">ส่งล้มเหลว</option>
-              <option value="pending">รอดำเนินการ</option>
-            </select>
-          </div>
+              {label}
+            </button>
+          ))}
           <select
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            className="ml-auto rounded-full border border-[#1b1b1726] bg-[#f7f5ef] px-3 py-1.5 text-xs text-[#1b1b17]"
             value={accountFilter ?? ''}
             onChange={(e) => {
               setAccountFilter(e.target.value ? Number(e.target.value) : undefined)
@@ -77,117 +102,52 @@ export function LogsPage() {
             }}
           >
             <option value="">ทุกบัญชี</option>
-            {accounts.map((acc) => (
-              <option key={acc.id} value={acc.id}>
-                {acc.email}
-              </option>
+            {accounts.map((account) => (
+              <option key={account.id} value={account.id}>{account.email}</option>
             ))}
           </select>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isLoading}
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            รีเฟรช
-          </Button>
         </div>
       </div>
 
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            รวม {total} รายการ
-            {statusFilter && ` (สถานะ: ${statusFilter})`}
-          </div>
+      <div className="overflow-hidden rounded-[14px] border border-[#1b1b1726] bg-white">
+        <div className="flex items-center justify-between border-b border-[#1b1b1726] bg-[#fbfaf3] px-4 py-3">
+          <div className="font-mono text-[11px] text-[#6b675c]">page {Math.floor(offset / limit) + 1}</div>
           <div className="flex items-center gap-2 text-sm">
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={offset === 0}
-              onClick={() => setOffset(Math.max(0, offset - limit))}
-            >
-              ก่อนหน้า
-            </Button>
-            <span>{currentPage} / {totalPages || 1}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              disabled={offset + limit >= total}
-              onClick={() => setOffset(offset + limit)}
-            >
-              ถัดไป
-            </Button>
+            <button type="button" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - limit))} className="rounded-md px-2 py-1 text-[#6b675c] hover:bg-[#1b1b170d] disabled:opacity-40">ก่อนหน้า</button>
+            <button type="button" disabled={offset + limit >= total} onClick={() => setOffset(offset + limit)} className="rounded-md px-2 py-1 text-[#6b675c] hover:bg-[#1b1b170d] disabled:opacity-40">ถัดไป</button>
           </div>
         </div>
 
-        <ScrollArea className="h-[calc(100vh-320px)]">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            </div>
-          ) : logs.length === 0 ? (
-            <div className="p-12 text-center text-muted-foreground">
-              <Mail className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>ยังไม่มีการแจ้งเตือน</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-border">
-              {logs.map((log) => {
-                const config = statusConfig[log.status as keyof typeof statusConfig] || statusConfig.pending
-                const Icon = config.icon
-
-                return (
-                  <div
-                    key={log.id}
-                    className="p-4 hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-start gap-3">
-                      <Icon
-                        className={`w-5 h-5 mt-0.5 flex-shrink-0 ${config.color} ${
-                          log.status === 'pending' ? 'animate-spin' : ''
-                        }`}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <Badge variant={config.badge}>{log.status}</Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(log.created_at), 'dd MMM yyyy HH:mm', {
-                              locale: th,
-                            })}
-                          </span>
-                        </div>
-                        {log.email_subject && (
-                          <p className="text-sm font-medium mb-1 truncate">
-                            {log.email_subject}
-                          </p>
-                        )}
-                        {log.email_from && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            จาก: {log.email_from}
-                          </p>
-                        )}
-                        {log.error_message && (
-                          <p className="text-xs text-destructive mt-2">
-                            {log.error_message}
-                          </p>
-                        )}
-                        {log.sent_at && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            ส่งเมื่อ: {format(new Date(log.sent_at), 'dd MMM HH:mm', {
-                              locale: th,
-                            })}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+        {isLoading ? (
+          <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-[#6b675c]" /></div>
+        ) : logs.length === 0 ? (
+          <div className="p-12 text-center text-[#6b675c]">
+            <Mail className="mx-auto mb-4 h-12 w-12 opacity-60" />
+            ยังไม่มีการแจ้งเตือน
+          </div>
+        ) : (
+          <div className="divide-y divide-[#1b1b1726]">
+            {logs.map((log) => {
+              const status = statusStyle[log.status]
+              const Icon = status.icon
+              return (
+                <div key={log.id} className="grid gap-3 px-4 py-3 hover:bg-[#fbfaf3aa] lg:grid-cols-[95px_1fr_150px_130px] lg:items-center">
+                  <div className="font-mono text-[11px] text-[#6b675c]">{formatTime(log.created_at)}</div>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold">{log.email_subject || 'ไม่มีหัวข้ออีเมล'}</div>
+                    <div className="mt-1 truncate font-mono text-[11px] text-[#6b675c]">{log.email_from || 'unknown sender'} / account #{log.gmail_account_id}</div>
+                    {log.error_message && <div className="mt-1 text-xs text-[#c43127]">{log.error_message}</div>}
                   </div>
-                )
-              })}
-            </div>
-          )}
-        </ScrollArea>
+                  <div className="font-mono text-[11px] text-[#6b675c]">channel #{log.channel_id}</div>
+                  <span className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 font-mono text-[10px] uppercase ${status.className}`}>
+                    <Icon className="h-3.5 w-3.5" />
+                    {status.label}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )

@@ -195,26 +195,32 @@ export function ChannelDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="border-[#1b1b1726] bg-[#f7f5ef] p-0 sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle>
-            {channel ? 'แก้ไข Notification Channel' : 'เพิ่ม Notification Channel'}
-          </DialogTitle>
-          <DialogDescription>
-            กรอกข้อมูลช่องทางการแจ้งเตือน
-          </DialogDescription>
+          <div className="border-b border-[#1b1b1726] bg-[#fbfaf3] px-5 py-4">
+            <div className="mb-1 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[#6b675c] before:h-1.5 before:w-1.5 before:rounded-full before:bg-[#34a853]">
+              Channel / {channel ? 'edit' : 'new'}
+            </div>
+            <DialogTitle className="text-xl font-semibold text-[#0e0e0c]">
+              {channel ? 'แก้ไข Notification Channel' : 'เพิ่ม Notification Channel'}
+            </DialogTitle>
+            <DialogDescription className="mt-1 text-sm text-[#6b675c]">
+              ตั้งค่าปลายทางสำหรับส่งแจ้งเตือนจาก rules ที่ match
+            </DialogDescription>
+          </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit}>
+          <div className="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-4">
           {/* Channel Type */}
-          <div className="space-y-2">
-            <Label htmlFor="type">Channel Type</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="type" className="text-sm font-semibold text-[#1b1b17]">Channel Type</Label>
             <Select
               value={formData.type}
               onValueChange={handleTypeChange}
               disabled={!!channel}
             >
-              <SelectTrigger>
+              <SelectTrigger className="rounded-[10px] border-[#1b1b17] bg-white focus:ring-[#1a73e822]">
                 <SelectValue placeholder="เลือกประเภท Channel" />
               </SelectTrigger>
               <SelectContent>
@@ -226,8 +232,8 @@ export function ChannelDialog({
           </div>
 
           {/* Channel Name */}
-          <div className="space-y-2">
-            <Label htmlFor="name">Channel Name</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="name" className="text-sm font-semibold text-[#1b1b17]">Channel Name</Label>
             <Input
               id="name"
               type="text"
@@ -236,6 +242,7 @@ export function ChannelDialog({
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
+              className="rounded-[10px] border-[#1b1b17] bg-white focus-visible:ring-[#1a73e822]"
               required
             />
           </div>
@@ -243,8 +250,8 @@ export function ChannelDialog({
           {/* Telegram Config */}
           {formData.type === 'telegram' && (
             <>
-              <div className="space-y-2">
-                <Label htmlFor="bot_token">Bot Token</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="bot_token" className="text-sm font-semibold text-[#1b1b17]">Bot Token</Label>
                 <Input
                   id="bot_token"
                   type="text"
@@ -256,12 +263,13 @@ export function ChannelDialog({
                       config: { ...formData.config, bot_token: e.target.value },
                     })
                   }
+                  className="rounded-[10px] border-[#1b1b17] bg-white focus-visible:ring-[#1a73e822]"
                   required
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="chat_id">Chat ID</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="chat_id" className="text-sm font-semibold text-[#1b1b17]">Chat ID</Label>
                 <Input
                   id="chat_id"
                   type="text"
@@ -273,14 +281,15 @@ export function ChannelDialog({
                       config: { ...formData.config, chat_id: e.target.value },
                     })
                   }
+                  className="rounded-[10px] border-[#1b1b17] bg-white focus-visible:ring-[#1a73e822]"
                   required
                 />
               </div>
 
               {/* Test Telegram */}
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center justify-between gap-4 rounded-[10px] border border-[#1b1b1726] bg-white p-3">
                 <div className="space-y-0.5">
-                  <Label>ทดสอบ Telegram</Label>
+                  <Label className="text-sm font-semibold text-[#1b1b17]">ทดสอบ Telegram</Label>
                   <p className="text-xs text-muted-foreground">
                     ส่ง mock notification เพื่อทดสอบว่า Bot ทำงานได้
                   </p>
@@ -289,6 +298,7 @@ export function ChannelDialog({
                   type="button"
                   variant="outline"
                   size="sm"
+                  className="rounded-[10px] border-[#1b1b17] bg-[#fbfaf3] font-semibold"
                   onClick={handleTestTelegram}
                   disabled={testLoading || !formData.config.bot_token || !formData.config.chat_id}
                 >
@@ -303,8 +313,8 @@ export function ChannelDialog({
           {/* LINE Config */}
           {formData.type === 'line' && (
             <>
-              <div className="space-y-2">
-                <Label htmlFor="access_token">LINE Notify Access Token</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="access_token" className="text-sm font-semibold text-[#1b1b17]">LINE Notify Access Token</Label>
                 <Input
                   id="access_token"
                   type="text"
@@ -316,6 +326,7 @@ export function ChannelDialog({
                       config: { ...formData.config, access_token: e.target.value },
                     })
                   }
+                  className="rounded-[10px] border-[#1b1b17] bg-white focus-visible:ring-[#1a73e822]"
                   required
                 />
                 <p className="text-xs text-muted-foreground">
@@ -324,9 +335,9 @@ export function ChannelDialog({
               </div>
 
               {/* Test LINE */}
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center justify-between gap-4 rounded-[10px] border border-[#1b1b1726] bg-white p-3">
                 <div className="space-y-0.5">
-                  <Label>ทดสอบ LINE Notify</Label>
+                  <Label className="text-sm font-semibold text-[#1b1b17]">ทดสอบ LINE Notify</Label>
                   <p className="text-xs text-muted-foreground">
                     ส่ง mock notification เพื่อทดสอบว่า Token ทำงานได้
                   </p>
@@ -335,6 +346,7 @@ export function ChannelDialog({
                   type="button"
                   variant="outline"
                   size="sm"
+                  className="rounded-[10px] border-[#1b1b17] bg-[#fbfaf3] font-semibold"
                   onClick={handleTestLine}
                   disabled={testLoading || !formData.config.access_token}
                 >
@@ -349,8 +361,8 @@ export function ChannelDialog({
           {/* Webhook Config */}
           {formData.type === 'webhook' && (
             <>
-              <div className="space-y-2">
-                <Label htmlFor="webhook_url">Webhook URL</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="webhook_url" className="text-sm font-semibold text-[#1b1b17]">Webhook URL</Label>
                 <Input
                   id="webhook_url"
                   type="url"
@@ -362,14 +374,15 @@ export function ChannelDialog({
                       config: { ...formData.config, url: e.target.value },
                     })
                   }
+                  className="rounded-[10px] border-[#1b1b17] bg-white focus-visible:ring-[#1a73e822]"
                   required
                 />
               </div>
 
               {/* Test Webhook */}
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center justify-between gap-4 rounded-[10px] border border-[#1b1b1726] bg-white p-3">
                 <div className="space-y-0.5">
-                  <Label>ทดสอบ Webhook</Label>
+                  <Label className="text-sm font-semibold text-[#1b1b17]">ทดสอบ Webhook</Label>
                   <p className="text-xs text-muted-foreground">
                     ส่ง mock notification เพื่อทดสอบว่า URL ทำงานได้
                   </p>
@@ -378,6 +391,7 @@ export function ChannelDialog({
                   type="button"
                   variant="outline"
                   size="sm"
+                  className="rounded-[10px] border-[#1b1b17] bg-[#fbfaf3] font-semibold"
                   onClick={handleTestWebhook}
                   disabled={testLoading || !formData.config.url}
                 >
@@ -390,9 +404,9 @@ export function ChannelDialog({
           )}
 
           {/* Enabled */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between rounded-[10px] border border-[#1b1b1726] bg-white p-3">
             <div className="space-y-0.5">
-              <Label htmlFor="enabled">เปิดใช้งาน</Label>
+              <Label htmlFor="enabled" className="text-sm font-semibold text-[#1b1b17]">เปิดใช้งาน</Label>
               <p className="text-xs text-muted-foreground">
                 เปิด/ปิดการส่งการแจ้งเตือนผ่าน Channel นี้
               </p>
@@ -406,16 +420,19 @@ export function ChannelDialog({
             />
           </div>
 
-          <DialogFooter>
+          </div>
+
+          <DialogFooter className="border-t border-[#1b1b1726] bg-[#fbfaf3] px-5 py-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
+              className="rounded-[10px] border-[#1b1b17] bg-white font-semibold"
             >
               ยกเลิก
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading} className="rounded-[10px] bg-[#0e0e0c] font-semibold text-[#f7f5ef] hover:bg-black">
               {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {channel ? 'บันทึกการแก้ไข' : 'เพิ่ม Channel'}
             </Button>

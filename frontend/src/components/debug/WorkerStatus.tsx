@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw, CheckCircle, XCircle, Clock, Database, Settings } from 'lucide-react'
+import { CheckCircle2, Clock, Database, RefreshCw, Settings, XCircle } from 'lucide-react'
 
 interface WorkerStatusData {
   timestamp: string
@@ -30,6 +30,17 @@ interface WorkerStatusData {
   }
 }
 
+function relativeTime(value: string | null) {
+  if (!value) return 'ไม่เคยเช็ค'
+  const date = new Date(value)
+  const minutes = Math.floor((Date.now() - date.getTime()) / 60000)
+  if (minutes < 1) return 'เมื่อสักครู่'
+  if (minutes < 60) return `${minutes} นาทีที่แล้ว`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours} ชั่วโมงที่แล้ว`
+  return `${Math.floor(hours / 24)} วันที่แล้ว`
+}
+
 export function WorkerStatus() {
   const [status, setStatus] = useState<WorkerStatusData | null>(null)
   const [loading, setLoading] = useState(false)
@@ -42,15 +53,10 @@ export function WorkerStatus() {
     try {
       const token = localStorage.getItem('access_token')
       const headers: Record<string, string> = {}
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
+      if (token) headers.Authorization = `Bearer ${token}`
       const response = await fetch('/api/worker-status', { headers })
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-      }
-      const data = await response.json()
-      setStatus(data)
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      setStatus(await response.json())
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
@@ -64,205 +70,127 @@ export function WorkerStatus() {
 
   useEffect(() => {
     if (!autoRefresh) return
-    const interval = setInterval(fetchStatus, 10000) // refresh ทุก 10 วินาที
+    const interval = setInterval(fetchStatus, 10000)
     return () => clearInterval(interval)
   }, [autoRefresh])
 
-  const formatDate = (isoString: string | null) => {
-    if (!isoString) return 'ไม่เคยเช็ค'
-    const date = new Date(isoString)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-
-    if (diffMins < 1) return 'เมื่อสักครู่'
-    if (diffMins < 60) return `${diffMins} นาทีที่แล้ว`
-    const diffHours = Math.floor(diffMins / 60)
-    if (diffHours < 24) return `${diffHours} ชั่วโมงที่แล้ว`
-    const diffDays = Math.floor(diffHours / 24)
-    return `${diffDays} วันที่แล้ว`
-  }
-
   if (error) {
     return (
-      <div className="p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
-        <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
-          <XCircle className="w-5 h-5" />
+      <div className="rounded-[14px] border border-[#ea433566] bg-[#ea433512] p-6 text-[#c43127]">
+        <div className="flex items-center gap-3">
+          <XCircle className="h-6 w-6" />
           <div>
             <p className="font-semibold">เกิดข้อผิดพลาด</p>
             <p className="text-sm">{error}</p>
           </div>
         </div>
-        <button
-          onClick={fetchStatus}
-          className="mt-3 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-        >
-          ลองอีกครั้ง
-        </button>
+        <button onClick={fetchStatus} className="mt-4 rounded-[10px] bg-[#ea4335] px-4 py-2 text-sm font-semibold text-white">ลองอีกครั้ง</button>
       </div>
     )
   }
 
   if (!status) {
     return (
-      <div className="p-8 text-center">
-        <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2 text-muted-foreground" />
-        <p className="text-muted-foreground">กำลังโหลดสถานะ...</p>
+      <div className="flex items-center justify-center rounded-[14px] border border-[#1b1b1726] bg-white py-20">
+        <RefreshCw className="h-8 w-8 animate-spin text-[#6b675c]" />
       </div>
     )
   }
 
+  const isRunning = status.worker.running
+
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Worker Status</h2>
-        <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
-              className="rounded"
-            />
-            Auto Refresh (10s)
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="mb-2 inline-flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.08em] text-[#6b675c] before:h-[3px] before:w-9 before:rounded-full before:bg-[linear-gradient(90deg,#1a73e8_0_25%,#ea4335_25%_50%,#fbbc04_50%_75%,#34a853_75%_100%)]">
+            worker / diagnostics
+          </div>
+          <h1 className="text-2xl font-semibold text-[#0e0e0c]">Worker Status</h1>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-[#6b675c]">ตรวจ process, Gmail polling, database และ environment ที่ worker ใช้งานอยู่</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 text-sm text-[#6b675c]">
+            <input type="checkbox" checked={autoRefresh} onChange={(e) => setAutoRefresh(e.target.checked)} />
+            Auto refresh 10s
           </label>
-          <button
-            onClick={fetchStatus}
-            disabled={loading}
-            className="p-2 hover:bg-muted rounded-lg transition-colors"
-            title="รีเฟรช"
-          >
-            <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+          <button onClick={fetchStatus} disabled={loading} className="inline-flex items-center gap-2 rounded-[10px] border border-[#1b1b1726] bg-white px-3.5 py-2 text-sm font-semibold hover:bg-[#efece2] disabled:opacity-60">
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            รีเฟรช
           </button>
         </div>
       </div>
 
-      {/* Worker Status Card */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className={`p-2 rounded-lg ${status.worker.running ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'}`}>
-            {status.worker.running ? (
-              <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
-            ) : (
-              <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
-            )}
+      <div className="grid gap-4 md:grid-cols-4">
+        {[
+          ['Worker', isRunning ? 'running' : 'offline', isRunning ? '#34a853' : '#ea4335'],
+          ['Accounts', `${status.gmail_accounts.enabled}/${status.gmail_accounts.total}`, '#1a73e8'],
+          ['Logs', status.database.notification_logs_count.toLocaleString(), '#7c4dff'],
+          ['Interval', `${status.environment.check_interval}s`, '#fbbc04'],
+        ].map(([label, value, color]) => (
+          <div key={label} className="overflow-hidden rounded-[14px] border border-[#1b1b1726] bg-white">
+            <div className="h-0.5" style={{ backgroundColor: color as string }} />
+            <div className="p-4">
+              <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#6b675c]">{label}</div>
+              <div className="mt-2 text-[26px] font-semibold leading-none">{value}</div>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-semibold">
-              Worker Process
-            </h3>
-            <p className={`text-sm ${status.worker.running ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-              {status.worker.running ? '✓ ทำงานปกติ' : '✗ ไม่ได้ทำงาน'}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-muted-foreground">Process ID</p>
-            <p className="font-mono">{status.worker.process_id || 'N/A'}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Check Method</p>
-            <p className="font-mono">{status.worker.check_method || 'N/A'}</p>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Gmail Accounts Card */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Clock className="w-6 h-6 text-blue-600" />
-          <div>
-            <h3 className="text-lg font-semibold">Gmail Accounts</h3>
-            <p className="text-sm text-muted-foreground">
-              {status.gmail_accounts.enabled} / {status.gmail_accounts.total} accounts เปิดใช้งาน
-            </p>
+      <div className="grid gap-5 xl:grid-cols-[1fr_1fr]">
+        <section className="rounded-[14px] border border-[#1b1b1726] bg-white">
+          <div className="flex items-center gap-3 border-b border-[#1b1b1726] bg-[#fbfaf3] px-5 py-4">
+            <div className={`grid h-9 w-9 place-items-center rounded-[9px] text-white ${isRunning ? 'bg-[#34a853]' : 'bg-[#ea4335]'}`}>
+              {isRunning ? <CheckCircle2 className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
+            </div>
+            <div>
+              <h2 className="font-semibold">Worker Process</h2>
+              <p className={`text-sm ${isRunning ? 'text-[#1f8f47]' : 'text-[#c43127]'}`}>{isRunning ? 'ทำงานปกติ' : 'ไม่ได้ทำงาน'}</p>
+            </div>
           </div>
-        </div>
+          <div className="grid gap-4 p-5 sm:grid-cols-2">
+            <div><div className="text-sm text-[#6b675c]">Process ID</div><div className="font-mono text-sm">{status.worker.process_id || 'N/A'}</div></div>
+            <div><div className="text-sm text-[#6b675c]">Check Method</div><div className="font-mono text-sm">{status.worker.check_method || 'N/A'}</div></div>
+          </div>
+        </section>
 
-        <div className="mb-4">
-          <p className="text-sm text-muted-foreground">เช็คล่าสุด</p>
-          <p className="font-medium">
-            {formatDate(status.gmail_accounts.last_checked)}
-          </p>
-        </div>
-
-        {status.gmail_accounts.accounts.length > 0 && (
-          <div className="space-y-2">
+        <section className="rounded-[14px] border border-[#1b1b1726] bg-white">
+          <div className="flex items-center gap-3 border-b border-[#1b1b1726] bg-[#fbfaf3] px-5 py-4">
+            <Clock className="h-6 w-6 text-[#1a73e8]" />
+            <div>
+              <h2 className="font-semibold">Gmail Accounts</h2>
+              <p className="text-sm text-[#6b675c]">ล่าสุด {relativeTime(status.gmail_accounts.last_checked)}</p>
+            </div>
+          </div>
+          <div className="divide-y divide-[#1b1b1726]">
             {status.gmail_accounts.accounts.map((account) => (
-              <div
-                key={account.id}
-                className={`p-3 rounded-lg border ${
-                  account.enabled ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950' : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{account.email}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Mode: {account.sync_mode} • Last: {formatDate(account.last_checked_at)}
-                    </p>
-                  </div>
-                  <div
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      account.enabled
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                        : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                    }`}
-                  >
-                    {account.enabled ? 'Enabled' : 'Disabled'}
-                  </div>
+              <div key={account.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                <div className="min-w-0">
+                  <div className="truncate font-semibold">{account.email}</div>
+                  <div className="font-mono text-[11px] text-[#6b675c]">{account.sync_mode} / {relativeTime(account.last_checked_at)}</div>
                 </div>
+                <span className={`rounded-full px-2.5 py-1 font-mono text-[10px] uppercase ${account.enabled ? 'bg-[#34a85318] text-[#1f8f47]' : 'bg-[#1b1b170f] text-[#6b675c]'}`}>
+                  {account.enabled ? 'enabled' : 'disabled'}
+                </span>
               </div>
             ))}
           </div>
-        )}
+        </section>
       </div>
 
-      {/* Database Card */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Database className="w-6 h-6 text-purple-600" />
-          <div>
-            <h3 className="text-lg font-semibold">Database</h3>
-            <p className="text-sm text-muted-foreground">
-              {status.database.notification_logs_count} notification logs
-            </p>
+      <div className="grid gap-5 xl:grid-cols-[1fr_1fr]">
+        <section className="rounded-[14px] border border-[#1b1b1726] bg-white p-5">
+          <div className="mb-4 flex items-center gap-3"><Database className="h-6 w-6 text-[#7c4dff]" /><h2 className="font-semibold">Database</h2></div>
+          <div className="font-mono text-xs leading-6 text-[#6b675c]">{status.database.path || 'N/A'}</div>
+        </section>
+        <section className="rounded-[14px] border border-[#1b1b1726] bg-white p-5">
+          <div className="mb-4 flex items-center gap-3"><Settings className="h-6 w-6 text-[#fbbc04]" /><h2 className="font-semibold">Environment</h2></div>
+          <div className="space-y-2 font-mono text-xs text-[#6b675c]">
+            <div>DATABASE_URL: {status.environment.database_url}</div>
+            <div>Last updated: {new Date(status.timestamp).toLocaleString('th-TH')}</div>
           </div>
-        </div>
-
-        <div className="space-y-2 text-sm">
-          <div>
-            <p className="text-muted-foreground">Database Path</p>
-            <p className="font-mono text-xs break-all">{status.database.path}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Environment Card */}
-      <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Settings className="w-6 h-6 text-orange-600" />
-          <h3 className="text-lg font-semibold">Environment</h3>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-muted-foreground">Check Interval</p>
-            <p className="font-mono">{status.environment.check_interval}s</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Database URL</p>
-            <p className="font-mono text-xs truncate">{status.environment.database_url}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Timestamp */}
-      <div className="text-center text-xs text-muted-foreground">
-        Last updated: {new Date(status.timestamp).toLocaleString('th-TH')}
+        </section>
       </div>
     </div>
   )

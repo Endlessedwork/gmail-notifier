@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Loader2, Wifi, Eye, EyeOff } from 'lucide-react'
+import { Check, Eye, EyeOff, Loader2, Wifi } from 'lucide-react'
 import { useCreateGmailAccount, useUpdateGmailAccount } from '@/hooks/useGmailAccounts'
 import { gmailAccountsApi } from '@/api'
 import { toast } from 'sonner'
@@ -139,20 +139,26 @@ export function GmailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="border-[#1b1b1726] bg-[#f7f5ef] p-0 sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle>
-            {account ? 'แก้ไขบัญชี Gmail' : 'เพิ่มบัญชี Gmail'}
-          </DialogTitle>
-          <DialogDescription>
-            กรอกข้อมูลบัญชี Gmail สำหรับรับอีเมล
-          </DialogDescription>
+          <div className="border-b border-[#1b1b1726] bg-[#fbfaf3] px-5 py-4">
+            <div className="mb-1 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[#6b675c] before:h-1.5 before:w-1.5 before:rounded-full before:bg-[#1a73e8]">
+              Account / {account ? 'edit' : 'new'}
+            </div>
+            <DialogTitle className="text-xl font-semibold text-[#0e0e0c]">
+              {account ? 'แก้ไขบัญชี Gmail' : 'เพิ่มบัญชี Gmail'}
+            </DialogTitle>
+            <DialogDescription className="mt-1 text-sm text-[#6b675c]">
+              กรอก Gmail App Password สำหรับให้ worker ตรวจอีเมลผ่าน IMAP
+            </DialogDescription>
+          </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit}>
+          <div className="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-4">
           {/* Email */}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="email" className="text-sm font-semibold text-[#1b1b17]">Email Address</Label>
             <Input
               id="email"
               type="email"
@@ -161,15 +167,26 @@ export function GmailDialog({
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
               }
+              className="rounded-[10px] border-[#1b1b17] bg-white focus-visible:ring-[#1a73e822]"
               required
             />
           </div>
 
           {/* Password */}
-          <div className="space-y-2">
-            <Label htmlFor="password">
-              {account ? 'App Password (เว้นว่างถ้าไม่เปลี่ยน)' : 'App Password'}
-            </Label>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="password" className="text-sm font-semibold text-[#1b1b17]">
+                {account ? 'App Password (เว้นว่างถ้าไม่เปลี่ยน)' : 'App Password'}
+              </Label>
+              <a
+                href="https://myaccount.google.com/apppasswords"
+                target="_blank"
+                rel="noreferrer"
+                className="font-mono text-[11px] text-[#1a73e8] underline underline-offset-2"
+              >
+                สร้างจาก Google
+              </a>
+            </div>
             <div className="relative">
               <Input
                 id="password"
@@ -180,7 +197,7 @@ export function GmailDialog({
                   setFormData({ ...formData, password: e.target.value })
                 }
                 required={!account}
-                className="pr-10"
+                className="rounded-[10px] border-[#1b1b17] bg-white pr-10 focus-visible:ring-[#1a73e822]"
               />
               <Button
                 type="button"
@@ -205,8 +222,8 @@ export function GmailDialog({
 
           {/* IMAP Server */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="imap_server">IMAP Server</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="imap_server" className="text-sm font-semibold text-[#1b1b17]">IMAP Server</Label>
               <Input
                 id="imap_server"
                 type="text"
@@ -214,12 +231,13 @@ export function GmailDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, imap_server: e.target.value })
                 }
+                className="rounded-[10px] border-[#1b1b17] bg-white focus-visible:ring-[#1a73e822]"
                 required
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="imap_port">IMAP Port</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="imap_port" className="text-sm font-semibold text-[#1b1b17]">IMAP Port</Label>
               <Input
                 id="imap_port"
                 type="number"
@@ -227,15 +245,16 @@ export function GmailDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, imap_port: parseInt(e.target.value) })
                 }
+                className="rounded-[10px] border-[#1b1b17] bg-white focus-visible:ring-[#1a73e822]"
                 required
               />
             </div>
           </div>
 
           {/* Test Connection */}
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-4 rounded-[10px] border border-[#1b1b1726] bg-white p-3">
             <div className="space-y-0.5">
-              <Label>ทดสอบการเชื่อมต่อ</Label>
+              <Label className="text-sm font-semibold text-[#1b1b17]">ทดสอบการเชื่อมต่อ</Label>
               <p className="text-xs text-muted-foreground">
                 {account
                   ? formData.password
@@ -253,6 +272,7 @@ export function GmailDialog({
                 testLoading ||
                 (!formData.email || (!formData.password && !account))
               }
+              className="rounded-[10px] border-[#1b1b1726] bg-white"
             >
               {testLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               <Wifi className="w-4 h-4 mr-2" />
@@ -261,9 +281,9 @@ export function GmailDialog({
           </div>
 
           {/* Enabled */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between rounded-[10px] border border-[#1b1b1726] bg-white p-3">
             <div className="space-y-0.5">
-              <Label htmlFor="enabled">เปิดใช้งาน</Label>
+              <Label htmlFor="enabled" className="text-sm font-semibold text-[#1b1b17]">เปิดใช้งาน</Label>
               <p className="text-xs text-muted-foreground">
                 เปิด/ปิดการตรวจสอบอีเมลจากบัญชีนี้
               </p>
@@ -279,9 +299,9 @@ export function GmailDialog({
 
           {/* Sync Mode */}
           {!account && (
-            <div className="space-y-3 border-t pt-4">
+            <div className="space-y-3 rounded-[10px] border border-[#1b1b1726] bg-[#fbfaf3] p-3">
               <div className="space-y-0.5">
-                <Label>ดึงอีเมลครั้งแรก</Label>
+                <Label className="text-sm font-semibold text-[#1b1b17]">ดึงอีเมลครั้งแรก</Label>
                 <p className="text-xs text-muted-foreground">
                   เลือกว่าจะดึงอีเมลย้อนหลังหรือไม่ตอนเริ่มใช้งาน
                 </p>
@@ -313,18 +333,21 @@ export function GmailDialog({
               </RadioGroup>
             </div>
           )}
+          </div>
 
-          <DialogFooter>
+          <DialogFooter className="border-t border-[#1b1b1726] bg-[#fbfaf3] px-5 py-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
+              className="rounded-[10px] border-[#ea433566] bg-transparent text-[#ea4335] hover:bg-[#ea433512] hover:text-[#ea4335]"
             >
               ยกเลิก
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading} className="rounded-[10px] bg-[#0e0e0c] text-[#f7f5ef] hover:bg-black">
               {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {!isLoading && <Check className="w-4 h-4 mr-2" />}
               {account ? 'บันทึกการแก้ไข' : 'เพิ่มบัญชี'}
             </Button>
           </DialogFooter>

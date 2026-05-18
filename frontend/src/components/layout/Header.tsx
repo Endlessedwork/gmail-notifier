@@ -1,15 +1,27 @@
-import { Bell, Sun, Moon, LogOut, User } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Bell, LogOut, Moon, Search, Sun } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useMetrics } from '@/hooks/useLogs'
 import { useTheme } from '@/hooks/useTheme'
 import { useAuth } from '@/contexts/AuthContext'
-import { Button } from '@/components/ui/button'
 
 export function Header() {
   const { data: metrics } = useMetrics()
   const { theme, toggleTheme } = useTheme()
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  const routeLabel =
+    [
+      { path: '/', label: 'Dashboard' },
+      { path: '/gmail', label: 'Gmail Accounts' },
+      { path: '/channels', label: 'Channels' },
+      { path: '/filters', label: 'Filter Rules' },
+      { path: '/logs', label: 'Notification Logs' },
+      { path: '/worker-status', label: 'Worker Status' },
+      { path: '/webhook-guide', label: 'Webhook Guide' },
+      { path: '/settings', label: 'Settings' },
+    ].find((item) => item.path === location.pathname)?.label || 'Dashboard'
 
   const handleLogout = () => {
     logout()
@@ -17,80 +29,56 @@ export function Header() {
   }
 
   return (
-    <header className="h-16 bg-card border-b border-border px-4 sm:px-6 flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        <h2 className="text-xs sm:text-sm font-medium text-muted-foreground hidden md:block">
-          {new Date().toLocaleDateString('th-TH', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}
-        </h2>
-        <h2 className="text-xs sm:text-sm font-medium text-muted-foreground md:hidden">
-          {new Date().toLocaleDateString('th-TH', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          })}
-        </h2>
+    <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between gap-4 border-b border-[#1b1b1726] bg-[#f7f5ef]/90 px-4 backdrop-blur-md sm:px-6 lg:px-7">
+      <div className="flex min-w-0 items-center gap-2 font-mono text-[11px] tracking-[0.04em] text-[#6b675c]">
+        <span className="hidden sm:inline">Workspace</span>
+        <span className="hidden opacity-50 sm:inline">/</span>
+        <span className="font-semibold text-[#0e0e0c]">{routeLabel}</span>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-4">
-        {/* Theme Toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleTheme}
-          className="text-muted-foreground hover:text-foreground"
-          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-        >
-          {theme === 'dark' ? (
-            <Sun className="w-5 h-5" />
-          ) : (
-            <Moon className="w-5 h-5" />
-          )}
-        </Button>
+      <div className="flex items-center gap-2 sm:gap-3">
+        <label className="relative hidden w-[280px] items-center rounded-[10px] border border-[#1b1b1726] bg-white pl-8 pr-2 lg:flex">
+          <Search className="absolute left-2.5 h-3.5 w-3.5 text-[#6b675c]" />
+          <input
+            className="w-full bg-transparent py-2 text-[13px] outline-none placeholder:text-[#8f8b7e]"
+            placeholder="Search rules, accounts, logs..."
+          />
+          <span className="rounded border border-[#1b1b1726] bg-[#f7f5ef] px-1.5 py-0.5 font-mono text-[10px] text-[#6b675c]">
+            cmd
+          </span>
+        </label>
 
-        {/* Quick Stats (hidden on mobile) */}
         {metrics && (
-          <div className="hidden sm:flex items-center gap-2 md:gap-4 text-xs md:text-sm">
-            <div className="flex items-center gap-1 md:gap-2">
-              <Bell className="w-3 h-3 md:w-4 md:h-4 text-muted-foreground" />
-              <span className="font-medium">
-                {metrics.total_notifications_sent.toLocaleString()}
-              </span>
-              <span className="text-muted-foreground hidden md:inline">sent</span>
-            </div>
-
+          <div className="hidden items-center gap-3 rounded-[10px] border border-[#1b1b1726] bg-white px-3 py-2 text-xs sm:flex">
+            <Bell className="h-4 w-4 text-[#6b675c]" />
+            <span className="font-semibold">{metrics.total_notifications_sent.toLocaleString()}</span>
+            <span className="text-[#6b675c]">sent</span>
             {metrics.errors_count > 0 && (
-              <div className="flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 rounded-md bg-destructive/10 text-destructive">
-                <span className="text-xs md:text-sm font-medium">
-                  {metrics.errors_count}
-                </span>
-                <span className="hidden md:inline">errors</span>
-              </div>
+              <span className="rounded-full bg-[#ea433518] px-2 py-0.5 font-mono text-[10px] text-[#c43127]">
+                {metrics.errors_count} errors
+              </span>
             )}
           </div>
         )}
 
-        {/* User info & Logout */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="grid h-9 w-9 place-items-center rounded-[10px] border border-[#1b1b1726] bg-white text-[#1b1b17] transition hover:bg-[#efece2]"
+          title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </button>
+
         {user && (
-          <div className="flex items-center gap-2 sm:gap-3 ml-2 pl-2 sm:pl-4 border-l border-border">
-            <div className="hidden sm:flex items-center gap-2 text-xs md:text-sm">
-              <User className="w-3 h-3 md:w-4 md:h-4 text-muted-foreground" />
-              <span className="font-medium text-foreground">{user.username}</span>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              className="text-muted-foreground hover:text-destructive h-8 w-8 md:h-9 md:w-9"
-              title="Sign out"
-            >
-              <LogOut className="w-4 h-4" />
-            </Button>
-          </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="grid h-9 w-9 place-items-center rounded-[10px] border border-[#1b1b1726] bg-white text-[#6b675c] transition hover:bg-[#ea433512] hover:text-[#ea4335]"
+            title="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         )}
       </div>
     </header>

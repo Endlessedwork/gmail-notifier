@@ -1,38 +1,42 @@
 import { useState } from 'react'
-import { Filter, Plus, Edit, Trash2, Mail, MessageSquare, ArrowRight, Loader2 } from 'lucide-react'
-import { Button } from '../ui/button'
-import { Badge } from '../ui/badge'
+import { ArrowRight, Edit, Filter, Loader2, Mail, MessageSquare, Plus, Trash2 } from 'lucide-react'
 import { FilterDialog } from './FilterDialog'
-import { useFilterRules, useDeleteFilterRule } from '@/hooks/useFilterRules'
+import { useDeleteFilterRule, useFilterRules, useUpdateFilterRule } from '@/hooks/useFilterRules'
 import { useGmailAccounts } from '@/hooks/useGmailAccounts'
 import { useNotificationChannels } from '@/hooks/useNotificationChannels'
-import type { FilterRule } from '@/types'
+import type { ChannelType, FilterRule } from '@/types'
 
-const FIELD_ICONS = {
-  from: Mail,
-  subject: MessageSquare,
-  body: MessageSquare,
+const priorityColors = ['#1a73e8', '#ea4335', '#fbbc04', '#34a853', '#6b675c']
+
+function channelClass(type?: ChannelType) {
+  if (type === 'telegram') return 'bg-[#229ed918] text-[#1b80b0]'
+  if (type === 'line') return 'bg-[#06c75518] text-[#048a3d]'
+  if (type === 'webhook') return 'bg-[#7c4dff18] text-[#5b34d3]'
+  return 'bg-[#1b1b170f] text-[#6b675c]'
 }
 
 export function FilterManagement() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingRule, setEditingRule] = useState<FilterRule | undefined>()
-
-  const { data: rulesData, isLoading: rulesLoading, error: rulesError } = useFilterRules()
+  const { data: rulesData, isLoading, error } = useFilterRules()
   const { data: accountsData } = useGmailAccounts()
   const { data: channelsData } = useNotificationChannels()
   const deleteRule = useDeleteFilterRule()
-
-  const rules = rulesData?.rules || []
+  const updateRule = useUpdateFilterRule()
+  const rules = [...(rulesData?.rules || [])].sort((a, b) => a.priority - b.priority)
   const accounts = accountsData?.accounts || []
   const channels = channelsData?.channels || []
+  const active = rules.filter((rule) => rule.enabled).length
 
-  const handleCreate = () => {
+  const getAccountEmail = (id: number) => accounts.find((account) => account.id === id)?.email || `Account #${id}`
+  const getChannel = (id: number) => channels.find((channel) => channel.id === id)
+
+  const openCreate = () => {
     setEditingRule(undefined)
     setDialogOpen(true)
   }
 
-  const handleEdit = (rule: FilterRule) => {
+  const openEdit = (rule: FilterRule) => {
     setEditingRule(rule)
     setDialogOpen(true)
   }
@@ -42,23 +46,11 @@ export function FilterManagement() {
     deleteRule.mutate(id)
   }
 
-  const getAccountEmail = (accountId: number) => {
-    const account = accounts.find((a) => a.id === accountId)
-    return account?.email || `Account #${accountId}`
-  }
-
-  const getChannelNames = (channelIds: number[]) => {
-    return channelIds.map((id) => {
-      const channel = channels.find((c) => c.id === id)
-      return channel?.name || `Channel #${id}`
-    })
-  }
-
-  if (rulesError) {
+  if (error) {
     return (
-      <div className="bg-destructive/10 border border-destructive text-destructive rounded-lg p-6 text-center">
-        <p className="font-medium">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
-        <p className="text-sm mt-2">{(rulesError as Error).message}</p>
+      <div className="rounded-[14px] border border-[#ea433566] bg-[#ea433512] p-6 text-center text-[#c43127]">
+        <p className="font-semibold">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>
+        <p className="mt-2 text-sm">{(error as Error).message}</p>
       </div>
     )
   }
@@ -66,179 +58,122 @@ export function FilterManagement() {
   return (
     <>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold">Filter Rules</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              จัดการกฎการกรองอีเมลและส่งไปยังช่องทางการแจ้งเตือนต่างๆ
+            <div className="mb-2 inline-flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.08em] text-[#6b675c] before:h-[3px] before:w-9 before:rounded-full before:bg-[linear-gradient(90deg,#1a73e8_0_25%,#ea4335_25%_50%,#fbbc04_50%_75%,#34a853_75%_100%)]">
+              {rules.length} rules / sorted by priority
+            </div>
+            <h1 className="text-2xl font-semibold text-[#0e0e0c]">กฎกรองอีเมล</h1>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-[#6b675c]">
+              Rules ทำงานตาม priority จากเลขน้อยไปมาก และส่งไปยัง channels ที่เลือกไว้
             </p>
           </div>
-          <Button onClick={handleCreate} className="gap-2" disabled={rulesLoading}>
-            <Plus className="w-4 h-4" />
-            สร้าง Filter Rule
-          </Button>
+
+          <button
+            type="button"
+            onClick={openCreate}
+            disabled={isLoading}
+            className="inline-flex items-center gap-2 rounded-[10px] border border-[#0e0e0c] bg-[#0e0e0c] px-3.5 py-2 text-sm font-semibold text-[#f7f5ef] transition hover:-translate-y-0.5 hover:bg-black disabled:opacity-60"
+          >
+            <Plus className="h-4 w-4" />
+            เพิ่มกฎ
+          </button>
         </div>
 
-        {/* Stats */}
-        {!rulesLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-card border border-border rounded-lg p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Filter className="w-4 h-4" />
-                <span className="text-sm">Total Rules</span>
+        <div className="grid gap-3 md:grid-cols-3">
+          {[
+            ['Total Rules', rules.length, '#1a73e8'],
+            ['Active', active, '#34a853'],
+            ['Disabled', rules.length - active, '#6b675c'],
+          ].map(([label, value, color]) => (
+            <div key={label} className="overflow-hidden rounded-[14px] border border-[#1b1b1726] bg-white">
+              <div className="h-0.5" style={{ backgroundColor: color as string }} />
+              <div className="p-4">
+                <div className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#6b675c]">{label}</div>
+                <div className="mt-2 text-[28px] font-semibold leading-none">{value}</div>
               </div>
-              <p className="text-2xl font-semibold">{rules.length}</p>
             </div>
-            <div className="bg-card border border-border rounded-lg p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Filter className="w-4 h-4 text-green-600" />
-                <span className="text-sm">Active</span>
-              </div>
-              <p className="text-2xl font-semibold text-green-600">
-                {rules.filter((r) => r.enabled).length}
-              </p>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Filter className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm">Disabled</span>
-              </div>
-              <p className="text-2xl font-semibold text-muted-foreground">
-                {rules.filter((r) => !r.enabled).length}
-              </p>
-            </div>
-          </div>
-        )}
+          ))}
+        </div>
 
-        {/* Loading State */}
-        {rulesLoading && (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        {isLoading ? (
+          <div className="flex items-center justify-center rounded-[14px] border border-[#1b1b1726] bg-white py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-[#6b675c]" />
           </div>
-        )}
+        ) : rules.length === 0 ? (
+          <div className="rounded-[14px] border border-[#1b1b1726] bg-white p-12 text-center">
+            <Filter className="mx-auto mb-4 h-14 w-14 text-[#6b675c]" />
+            <h3 className="text-lg font-semibold">ยังไม่มี Filter Rules</h3>
+            <p className="mx-auto mt-2 max-w-md text-sm text-[#6b675c]">สร้าง rule เพื่อจับอีเมลที่สำคัญแล้วส่งต่อไปยัง channels</p>
+            <button type="button" onClick={openCreate} className="mt-6 inline-flex items-center gap-2 rounded-[10px] bg-[#0e0e0c] px-4 py-2.5 text-sm font-semibold text-[#f7f5ef]">
+              <Plus className="h-4 w-4" />
+              สร้าง Rule แรก
+            </button>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-[14px] border border-[#1b1b1726] bg-white">
+            <div className="hidden grid-cols-[70px_1.2fr_1.8fr_1fr_1.2fr_90px_90px] gap-3 border-b border-[#1b1b1726] bg-[#fbfaf3] px-4 py-3 font-mono text-[10px] uppercase tracking-[0.1em] text-[#6b675c] lg:grid">
+              <span>Priority</span><span>Rule</span><span>Match</span><span>Account</span><span>Channels</span><span>Active</span><span className="text-right">Actions</span>
+            </div>
 
-        {/* Rules List */}
-        {!rulesLoading && (
-          <div className="space-y-3">
-            {rules.length === 0 ? (
-              <div className="bg-card border border-border rounded-lg p-12 text-center">
-                <Filter className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">ยังไม่มี Filter Rules</h3>
-                <p className="text-muted-foreground mb-6">
-                  สร้าง filter rule เพื่อกรองและส่งอีเมลไปยังช่องทางการแจ้งเตือนที่ต้องการ
-                </p>
-                <Button onClick={handleCreate}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  สร้าง Rule แรก
-                </Button>
-              </div>
-            ) : (
-              rules.map((rule) => {
-                const FieldIcon = FIELD_ICONS[rule.field] || Mail
+            <div className="divide-y divide-[#1b1b1726]">
+              {rules.map((rule, index) => {
+                const FieldIcon = rule.field === 'from' ? Mail : MessageSquare
                 return (
-                  <div
-                    key={rule.id}
-                    className="bg-card border border-border rounded-lg p-6 hover:shadow-sm transition-shadow"
-                  >
-                    <div className="flex items-start gap-4">
-                      {/* Priority Badge */}
-                      <div className="shrink-0">
-                        <div className="w-10 h-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
-                          <span className="text-sm font-semibold">
-                            #{rule.priority}
+                  <div key={rule.id} className="grid gap-3 px-4 py-4 lg:grid-cols-[70px_1.2fr_1.8fr_1fr_1.2fr_90px_90px] lg:items-center">
+                    <div className="flex items-center gap-3">
+                      <span className="grid h-8 w-8 place-items-center rounded-lg font-mono text-xs font-bold text-white" style={{ backgroundColor: priorityColors[index % priorityColors.length], color: priorityColors[index % priorityColors.length] === '#fbbc04' ? '#1b1b17' : '#fff' }}>
+                        {rule.priority}
+                      </span>
+                      <span className="font-mono text-[11px] text-[#6b675c] lg:hidden">priority</span>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate font-semibold text-[#0e0e0c]">{rule.name}</div>
+                      <div className="mt-0.5 font-mono text-[11px] text-[#6b675c]">rule #{rule.id}</div>
+                    </div>
+                    <div className="inline-flex min-w-0 items-center gap-2 rounded-md border border-[#1b1b1726] bg-[#fbfaf3] px-2 py-1 font-mono text-[11px] text-[#1b1b17]">
+                      <FieldIcon className="h-3.5 w-3.5 shrink-0 text-[#1a73e8]" />
+                      <span className="text-[#1a73e8]">{rule.field}</span>
+                      <span className="text-[#6b675c]">{rule.match_type}</span>
+                      <span className="truncate">{rule.match_value}</span>
+                    </div>
+                    <div className="truncate font-mono text-[11px] text-[#6b675c]">{getAccountEmail(rule.gmail_account_id)}</div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <ArrowRight className="h-3.5 w-3.5 text-[#6b675c]" />
+                      {rule.channel_ids.map((id) => {
+                        const channel = getChannel(id)
+                        return (
+                          <span key={id} className={`rounded-md px-2 py-1 font-mono text-[10px] ${channelClass(channel?.type)}`}>
+                            {channel?.name || `#${id}`}
                           </span>
-                        </div>
-                      </div>
-
-                      {/* Rule Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-3">
-                          <h3 className="font-semibold text-lg">{rule.name}</h3>
-                          <Badge variant={rule.enabled ? 'default' : 'secondary'}>
-                            {rule.enabled ? 'Active' : 'Disabled'}
-                          </Badge>
-                        </div>
-
-                        {/* Account Info */}
-                        <div className="flex items-center gap-2 mb-2 text-sm">
-                          <Mail className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-muted-foreground">Account:</span>
-                          <span className="font-mono text-xs">
-                            {getAccountEmail(rule.gmail_account_id)}
-                          </span>
-                        </div>
-
-                        {/* Match Pattern */}
-                        <div className="flex items-center gap-2 mb-2 text-sm">
-                          <FieldIcon className="w-4 h-4 text-primary" />
-                          <span className="text-muted-foreground capitalize">
-                            {rule.field}
-                          </span>
-                          <span className="text-muted-foreground">{rule.match_type}</span>
-                          <code className="px-2 py-1 rounded bg-muted font-mono text-xs text-foreground">
-                            {rule.match_value}
-                          </code>
-                        </div>
-
-                        {/* Destination */}
-                        <div className="flex items-center gap-2 text-sm flex-wrap">
-                          <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-muted-foreground">Send to</span>
-                          {getChannelNames(rule.channel_ids).map((name, idx) => (
-                            <code
-                              key={idx}
-                              className="px-2 py-1 rounded bg-muted font-mono text-xs text-primary"
-                            >
-                              {name}
-                            </code>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex gap-2 shrink-0">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-2"
-                          onClick={() => handleEdit(rule)}
-                        >
-                          <Edit className="w-3 h-3" />
-                          แก้ไข
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-2 text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(rule.id, rule.name)}
-                          disabled={deleteRule.isPending}
-                        >
-                          {deleteRule.isPending ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-3 h-3" />
-                          )}
-                          ลบ
-                        </Button>
-                      </div>
+                        )
+                      })}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => updateRule.mutate({ id: rule.id, data: { enabled: !rule.enabled } })}
+                      className={`relative h-5 w-9 rounded-full transition ${rule.enabled ? 'bg-[#34a853]' : 'bg-[#1b1b1722]'}`}
+                      disabled={updateRule.isPending}
+                    >
+                      <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition ${rule.enabled ? 'left-[18px]' : 'left-0.5'}`} />
+                    </button>
+                    <div className="flex justify-end gap-1">
+                      <button type="button" onClick={() => openEdit(rule)} className="grid h-8 w-8 place-items-center rounded-md text-[#6b675c] hover:bg-[#1b1b170d] hover:text-[#0e0e0c]">
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button type="button" onClick={() => handleDelete(rule.id, rule.name)} disabled={deleteRule.isPending} className="grid h-8 w-8 place-items-center rounded-md text-[#6b675c] hover:bg-[#ea433512] hover:text-[#ea4335] disabled:opacity-60">
+                        {deleteRule.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      </button>
                     </div>
                   </div>
                 )
-              })
-            )}
+              })}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Filter Dialog */}
-      <FilterDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        rule={editingRule}
-        accounts={accounts}
-        channels={channels}
-      />
+      <FilterDialog open={dialogOpen} onOpenChange={setDialogOpen} rule={editingRule} accounts={accounts} channels={channels} />
     </>
   )
 }

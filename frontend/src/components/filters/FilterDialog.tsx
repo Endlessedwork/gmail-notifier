@@ -99,20 +99,26 @@ export function FilterDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="border-[#1b1b1726] bg-[#f7f5ef] p-0 sm:max-w-[560px]">
         <DialogHeader>
-          <DialogTitle>
-            {rule ? 'แก้ไข Filter Rule' : 'สร้าง Filter Rule ใหม่'}
-          </DialogTitle>
-          <DialogDescription>
-            กำหนดเงื่อนไขการกรองอีเมลและส่งไปยังช่องทางการแจ้งเตือน
-          </DialogDescription>
+          <div className="border-b border-[#1b1b1726] bg-[#fbfaf3] px-5 py-4">
+            <div className="mb-1 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[#6b675c] before:h-1.5 before:w-1.5 before:rounded-full before:bg-[#ea4335]">
+              Rule / {rule ? 'edit' : 'new'}
+            </div>
+            <DialogTitle className="text-xl font-semibold text-[#0e0e0c]">
+              {rule ? 'แก้ไข Filter Rule' : 'สร้าง Filter Rule ใหม่'}
+            </DialogTitle>
+            <DialogDescription className="mt-1 text-sm text-[#6b675c]">
+              กำหนดเงื่อนไขการกรองอีเมลและส่งไปยังช่องทางการแจ้งเตือน
+            </DialogDescription>
+          </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit}>
+          <div className="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-4">
           {/* Name */}
-          <div className="space-y-2">
-            <Label htmlFor="name">ชื่อ Rule</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="name" className="text-sm font-semibold text-[#1b1b17]">ชื่อ Rule</Label>
             <Input
               id="name"
               placeholder="เช่น: แจ้งเตือนจากลูกค้า"
@@ -120,20 +126,21 @@ export function FilterDialog({
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
+              className="rounded-[10px] border-[#1b1b17] bg-white focus-visible:ring-[#1a73e822]"
               required
             />
           </div>
 
           {/* Gmail Account */}
-          <div className="space-y-2">
-            <Label htmlFor="gmail_account_id">Gmail Account</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="gmail_account_id" className="text-sm font-semibold text-[#1b1b17]">Gmail Account</Label>
             <Select
               value={formData.gmail_account_id.toString()}
               onValueChange={(value) =>
                 setFormData({ ...formData, gmail_account_id: parseInt(value) })
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="rounded-[10px] border-[#1b1b17] bg-white focus:ring-[#1a73e822]">
                 <SelectValue placeholder="เลือก Gmail Account" />
               </SelectTrigger>
               <SelectContent>
@@ -147,15 +154,15 @@ export function FilterDialog({
           </div>
 
           {/* Field */}
-          <div className="space-y-2">
-            <Label htmlFor="field">กรองจาก Field</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="field" className="text-sm font-semibold text-[#1b1b17]">กรองจาก Field</Label>
             <Select
               value={formData.field}
               onValueChange={(value) =>
                 setFormData({ ...formData, field: value as FilterField })
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="rounded-[10px] border-[#1b1b17] bg-white focus:ring-[#1a73e822]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -167,15 +174,15 @@ export function FilterDialog({
           </div>
 
           {/* Match Type */}
-          <div className="space-y-2">
-            <Label htmlFor="match_type">รูปแบบการตรวจสอบ</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="match_type" className="text-sm font-semibold text-[#1b1b17]">รูปแบบการตรวจสอบ</Label>
             <Select
               value={formData.match_type}
               onValueChange={(value) =>
                 setFormData({ ...formData, match_type: value as MatchType })
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="rounded-[10px] border-[#1b1b17] bg-white focus:ring-[#1a73e822]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -187,8 +194,8 @@ export function FilterDialog({
           </div>
 
           {/* Match Value */}
-          <div className="space-y-2">
-            <Label htmlFor="match_value">ค่าที่ต้องการตรวจสอบ</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="match_value" className="text-sm font-semibold text-[#1b1b17]">ค่าที่ต้องการตรวจสอบ</Label>
             <Input
               id="match_value"
               placeholder="เช่น: support@example.com"
@@ -196,6 +203,7 @@ export function FilterDialog({
               onChange={(e) =>
                 setFormData({ ...formData, match_value: e.target.value })
               }
+              className="rounded-[10px] border-[#1b1b17] bg-white focus-visible:ring-[#1a73e822]"
               required
             />
             {formData.match_type === 'regex' && (
@@ -206,9 +214,9 @@ export function FilterDialog({
           </div>
 
           {/* Channels (Multi-select) */}
-          <div className="space-y-2">
-            <Label>ส่งไปที่ Channels (เลือกได้หลายช่องทาง)</Label>
-            <div className="border rounded-md p-4 space-y-3 max-h-[200px] overflow-y-auto">
+          <div className="space-y-1.5">
+            <Label className="text-sm font-semibold text-[#1b1b17]">ส่งไปที่ Channels (เลือกได้หลายช่องทาง)</Label>
+            <div className="max-h-[200px] space-y-3 overflow-y-auto rounded-[10px] border border-[#1b1b1726] bg-white p-4">
               {channels.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   ยังไม่มี Channel กรุณาสร้าง Channel ก่อน
@@ -237,7 +245,7 @@ export function FilterDialog({
                     />
                     <label
                       htmlFor={`channel-${channel.id}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      className="cursor-pointer text-sm font-medium leading-none text-[#1b1b17] peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
                       {channel.name} ({channel.type})
                     </label>
@@ -251,8 +259,8 @@ export function FilterDialog({
           </div>
 
           {/* Priority */}
-          <div className="space-y-2">
-            <Label htmlFor="priority">ลำดับความสำคัญ (0-100)</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="priority" className="text-sm font-semibold text-[#1b1b17]">ลำดับความสำคัญ (0-100)</Label>
             <Input
               id="priority"
               type="number"
@@ -262,6 +270,7 @@ export function FilterDialog({
               onChange={(e) =>
                 setFormData({ ...formData, priority: parseInt(e.target.value) })
               }
+              className="rounded-[10px] border-[#1b1b17] bg-white focus-visible:ring-[#1a73e822]"
               required
             />
             <p className="text-xs text-muted-foreground">
@@ -270,9 +279,9 @@ export function FilterDialog({
           </div>
 
           {/* Enabled */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between rounded-[10px] border border-[#1b1b1726] bg-white p-3">
             <div className="space-y-0.5">
-              <Label htmlFor="enabled">เปิดใช้งาน</Label>
+              <Label htmlFor="enabled" className="text-sm font-semibold text-[#1b1b17]">เปิดใช้งาน</Label>
               <p className="text-xs text-muted-foreground">
                 เปิด/ปิดการใช้งาน rule นี้
               </p>
@@ -286,16 +295,19 @@ export function FilterDialog({
             />
           </div>
 
-          <DialogFooter>
+          </div>
+
+          <DialogFooter className="border-t border-[#1b1b1726] bg-[#fbfaf3] px-5 py-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
+              className="rounded-[10px] border-[#1b1b17] bg-white font-semibold"
             >
               ยกเลิก
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading} className="rounded-[10px] bg-[#0e0e0c] font-semibold text-[#f7f5ef] hover:bg-black">
               {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {rule ? 'บันทึกการแก้ไข' : 'สร้าง Rule'}
             </Button>
